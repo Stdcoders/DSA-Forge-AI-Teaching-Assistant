@@ -18,17 +18,32 @@ serve(async (req) => {
 Each step must be an object with these fields:
 - "line": line number (1-indexed integer) being executed
 - "code": the exact code snippet for that line (string)
-- "explanation": short plain-English explanation of what happens (string, max 80 chars)
-- "variables": object of ALL current variable name→value pairs after this step (e.g. {"i": 0, "sum": 0, "arr": "[1,2,3]"})
+- "explanation": short plain-English explanation of what happens (string, max 100 chars)
+- "variables": object of ALL current variable name→value pairs after this step (e.g. {"i": 0, "sum": 0})
 - "highlight": "normal" | "branch" | "loop" | "return" | "error" (string)
+- "arrayState": (optional) if the code involves an array/list, include this object:
+  {
+    "name": "arr",           // variable name of the array
+    "values": [2, 5, 8, 12], // current array contents as primitives
+    "highlightIndices": [2], // indices to highlight in cyan (current element being accessed)
+    "pointers": {            // named pointers shown below cells (e.g. low/mid/high/i/j/left/right)
+      "low": 0,
+      "mid": 2,
+      "high": 5
+    },
+    "keyValue": 8,           // (optional) the search key / target value shown above with a bubble
+    "keyPointer": 2          // (optional) index where the key arrow points
+  }
 
 Rules:
 - Return ONLY a valid JSON array, no markdown, no extra text
 - Include every meaningful execution step (initialization, loop iterations, conditionals, function calls, returns)
-- For loops, show each iteration as separate steps
+- For loops, show each iteration as separate steps, updating arrayState pointers on each iteration
 - Keep explanations concise and educational
 - Variables should show their current value after the step executes
-- Max 30 steps total (summarize if needed)`;
+- Max 30 steps total (summarize if needed)
+- For sorting algorithms, show the array mutating step by step with highlightIndices on elements being compared/swapped
+- For search algorithms, always include low/mid/high pointers and keyValue`;
 
     const userPrompt = `Dry-run this ${language} code${input ? ` with stdin input: ${input}` : ""} and return the JSON step array:\n\n${code}`;
 
