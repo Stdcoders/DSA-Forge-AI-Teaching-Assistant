@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import Editor from '@monaco-editor/react';
+import DryRunPanel, { type DryRunStep } from '@/components/DryRunPanel';
 
 const JUDGE0_URL = 'https://ce.judge0.com';
 
@@ -35,7 +36,6 @@ export default function CodeEditorPage() {
   const [searchParams] = useSearchParams();
   const { profile } = useAuth();
   const preferredLang = (profile?.preferred_language as Language) || 'python';
-  const initialTopicId = searchParams.get('topicId') || '';
   const initialLang = (searchParams.get('lang') as Language) || preferredLang;
 
   const [language, setLanguage] = useState<Language>(initialLang);
@@ -43,7 +43,7 @@ export default function CodeEditorPage() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [running, setRunning] = useState(false);
-  const [dryRunResult, setDryRunResult] = useState('');
+  const [dryRunSteps, setDryRunSteps] = useState<DryRunStep[]>([]);
   const [loadingDryRun, setLoadingDryRun] = useState(false);
   const [activePanel, setActivePanel] = useState<'output' | 'dryrun'>('output');
 
@@ -51,7 +51,7 @@ export default function CodeEditorPage() {
     setLanguage(lang);
     setCode(DEFAULT_CODE[lang]);
     setOutput('');
-    setDryRunResult('');
+    setDryRunSteps([]);
   };
 
   const handleRun = async () => {
@@ -62,9 +62,7 @@ export default function CodeEditorPage() {
     try {
       const res = await fetch(`${JUDGE0_URL}/submissions?base64_encoded=false&wait=true`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           source_code: code,
           language_id: LANGUAGE_IDS[language],
@@ -97,7 +95,7 @@ export default function CodeEditorPage() {
   const handleDryRun = async () => {
     if (!code.trim()) return;
     setLoadingDryRun(true);
-    setDryRunResult('');
+    setDryRunSteps([]);
     setActivePanel('dryrun');
 
     try {
@@ -120,34 +118,19 @@ export default function CodeEditorPage() {
         return;
       }
 
-      const reader = resp.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = buffer.indexOf('\n')) !== -1) {
-          let line = buffer.slice(0, nl);
-          buffer = buffer.slice(nl + 1);
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (!line.startsWith('data: ')) continue;
-          const json = line.slice(6).trim();
-          if (json === '[DONE]') break;
-          try {
-            const parsed = JSON.parse(json);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) setDryRunResult(prev => prev + content);
-          } catch {}
-        }
+      const data = await resp.json();
+      if (data.steps && Array.isArray(data.steps)) {
+        setDryRunSteps(data.steps);
+      } else {
+        toast.error('Could not parse dry run steps');
       }
     } catch (e) {
       toast.error('Failed to connect to AI service');
     }
     setLoadingDryRun(false);
   };
+
+  const codeLines = code.split('\n');
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -217,7 +200,7 @@ export default function CodeEditorPage() {
         <div className="w-96 border-l border-border flex flex-col flex-shrink-0"
           style={{ background: 'hsl(var(--card))' }}>
           {/* Tabs */}
-          <div className="flex border-b border-border">
+          <div className="flex border-b border-border flex-shrink-0">
             {(['output', 'dryrun'] as const).map(tab => (
               <button key={tab} onClick={() => setActivePanel(tab)}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
@@ -230,7 +213,7 @@ export default function CodeEditorPage() {
             ))}
           </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4">
             {activePanel === 'output' ? (
               <div className="animate-fade-in">
                 {output ? (
@@ -243,67 +226,11 @@ export default function CodeEditorPage() {
                 )}
               </div>
             ) : (
-              <div>
-                {loadingDryRun && !dryRunResult && (
-                  <div className="flex flex-col gap-4 animate-fade-in">
-                    {/* Scanning header */}
-                    <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                      <span className="ai-pulse">●</span>
-                      Tracing execution step by step...
-                    </div>
-                    {/* Animated skeleton lines */}
-                    {[80, 60, 90, 50, 70].map((w, i) => (
-                      <div key={i} className="space-y-1.5" style={{ animationDelay: `${i * 100}ms` }}>
-                        <div
-                          className="h-2.5 rounded-full bg-primary/20 pulse"
-                          style={{ width: `${w}%` }}
-                        />
-                        {i % 2 === 0 && (
-                          <div className="h-2 rounded-full bg-muted pulse" style={{ width: `${w - 20}%` }} />
-                        )}
-                      </div>
-                    ))}
-                    {/* Step indicator */}
-                    <div className="flex gap-1.5 mt-2">
-                      {['Parse', 'Init', 'Execute', 'Trace'].map((step, i) => (
-                        <div key={step} className="flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-muted"
-                          style={{ opacity: 0.4 + i * 0.15 }}>
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary pulse inline-block" />
-                          {step}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {dryRunResult ? (
-                  <div className="space-y-3 animate-fade-in">
-                    {/* Result header badge */}
-                    <div className="flex items-center gap-2 pb-2 border-b border-border">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-mono font-medium animate-scale-in">
-                        🔍 Dry Run Complete
-                      </span>
-                    </div>
-                    {/* Streaming content rendered line by line with stagger */}
-                    <div className="prose-dark text-sm leading-relaxed whitespace-pre-wrap font-mono text-foreground/90">
-                      {dryRunResult}
-                    </div>
-                  </div>
-                ) : !loadingDryRun && (
-                  <div className="text-muted-foreground text-sm text-center mt-8 animate-fade-in">
-                    <div className="text-3xl mb-3 hover-scale inline-block cursor-default">🔍</div>
-                    <p className="font-medium text-foreground/70">Step-by-step code trace</p>
-                    <p className="mt-1 text-xs">AI will track every variable and explain each execution step</p>
-                    <div className="mt-4 flex flex-col gap-1.5 text-left px-4">
-                      {['Variable initialization', 'Loop iterations', 'Function calls', 'Return values'].map((item, i) => (
-                        <div key={item} className="flex items-center gap-2 text-xs text-muted-foreground/70">
-                          <span className="w-1 h-1 rounded-full bg-primary/50 flex-shrink-0" />
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <DryRunPanel
+                steps={dryRunSteps}
+                isLoading={loadingDryRun}
+                codeLines={codeLines}
+              />
             )}
           </div>
         </div>
