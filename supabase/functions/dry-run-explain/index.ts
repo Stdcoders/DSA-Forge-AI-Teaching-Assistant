@@ -13,23 +13,24 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const systemPrompt = `You are an expert programming instructor specializing in code analysis and dry-run explanations.
+    const systemPrompt = `You are an expert programming instructor. When given code, produce a structured dry-run trace as a JSON array of steps.
 
-When given code, produce a clear step-by-step dry run explanation:
-1. List all variables and their initial values
-2. Trace each line/step, showing variable state changes
-3. Identify the algorithm pattern used (two-pointer, sliding window, recursion, etc.)
-4. Point out any bugs: Syntax errors, Logical errors, or Conceptual mistakes
-5. Provide improvement suggestions
+Each step must be an object with these fields:
+- "line": line number (1-indexed integer) being executed
+- "code": the exact code snippet for that line (string)
+- "explanation": short plain-English explanation of what happens (string, max 80 chars)
+- "variables": object of ALL current variable name→value pairs after this step (e.g. {"i": 0, "sum": 0, "arr": "[1,2,3]"})
+- "highlight": "normal" | "branch" | "loop" | "return" | "error" (string)
 
-Format with clear sections: **Variables**, **Step-by-Step Trace**, **Algorithm Pattern**, **Issues Found** (if any), **Suggested Fix** (if needed).
-Use markdown tables for variable tracking when helpful.`;
+Rules:
+- Return ONLY a valid JSON array, no markdown, no extra text
+- Include every meaningful execution step (initialization, loop iterations, conditionals, function calls, returns)
+- For loops, show each iteration as separate steps
+- Keep explanations concise and educational
+- Variables should show their current value after the step executes
+- Max 30 steps total (summarize if needed)`;
 
-    const userPrompt = `Perform a dry run analysis of this ${language} code${input ? ` with input: ${input}` : ""}:
-
-\`\`\`${language}
-${code}
-\`\`\``;
+    const userPrompt = `Dry-run this ${language} code${input ? ` with stdin input: ${input}` : ""} and return the JSON step array:\n\n${code}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -38,12 +39,12 @@ ${code}
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        stream: true,
+        stream: false,
       }),
     });
 
@@ -53,7 +54,15 @@ ${code}
       return new Response(JSON.stringify({ error: "AI error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "[]";
+
+    // Strip markdown code fences if present
+    const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+
+    return new Response(JSON.stringify({ steps: JSON.parse(cleaned) }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
     console.error("dry-run error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
