@@ -197,7 +197,7 @@ export default function CodeEditorPage() {
         </div>
 
         {/* Output/Dry Run Panel */}
-        <div className="w-96 border-l border-border flex flex-col flex-shrink-0"
+        <div className="w-96 border-l border-border flex flex-col flex-shrink-0 overflow-hidden"
           style={{ background: 'hsl(var(--card))' }}>
           {/* Tabs */}
           <div className="flex border-b border-border flex-shrink-0">
@@ -212,27 +212,28 @@ export default function CodeEditorPage() {
               </button>
             ))}
           </div>
+          {/* Panel content — full height, no extra padding wrapper */}
 
-          <div className="flex-1 overflow-y-auto p-4">
-            {activePanel === 'output' ? (
-              <div className="animate-fade-in">
-                {output ? (
-                  <pre className="text-sm font-mono whitespace-pre-wrap leading-relaxed text-foreground">{output}</pre>
-                ) : (
-                  <div className="text-muted-foreground text-sm text-center mt-8">
-                    <div className="text-3xl mb-2">▶</div>
-                    <p>Run your code to see output here</p>
-                  </div>
-                )}
-              </div>
-            ) : (
+          {activePanel === 'output' ? (
+            <div className="flex-1 overflow-y-auto p-4 animate-fade-in">
+              {output ? (
+                <pre className="text-sm font-mono whitespace-pre-wrap leading-relaxed text-foreground">{output}</pre>
+              ) : (
+                <div className="text-muted-foreground text-sm text-center mt-8">
+                  <div className="text-3xl mb-2">▶</div>
+                  <p>Run your code to see output here</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 overflow-hidden">
               <DryRunPanel
                 steps={dryRunSteps}
                 isLoading={loadingDryRun}
                 codeLines={codeLines}
               />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

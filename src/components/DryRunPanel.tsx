@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import ArrayVisualizer, { type ArrayState } from './ArrayVisualizer';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import AlgoArray, { type ArrayState } from './AlgoArray';
 
 export interface DryRunStep {
   line: number;
   code: string;
   explanation: string;
+  conceptNote?: string;
   variables: Record<string, string | number | boolean>;
   highlight: 'normal' | 'branch' | 'loop' | 'return' | 'error';
   arrayState?: ArrayState;
@@ -16,219 +17,285 @@ interface DryRunPanelProps {
   codeLines: string[];
 }
 
-const HIGHLIGHT_COLORS: Record<string, string> = {
-  normal:  'border-primary/30 bg-primary/5',
-  branch:  'border-amber/50 bg-amber/5',
-  loop:    'border-purple/50 bg-purple/5',
-  return:  'border-dsa-green/50 bg-dsa-green/5',
-  error:   'border-destructive/50 bg-destructive/5',
+const HIGHLIGHT_COLORS: Record<string, { border: string; bg: string; badge: string; label: string }> = {
+  normal:  { border: 'border-primary/30',     bg: 'bg-primary/5',     badge: 'bg-primary/20 text-primary',         label: 'EXEC'   },
+  branch:  { border: 'border-amber/40',       bg: 'bg-amber/5',       badge: 'bg-amber/20 text-amber',             label: 'BRANCH' },
+  loop:    { border: 'border-purple/40',      bg: 'bg-purple/5',      badge: 'bg-purple/20 text-purple',           label: 'LOOP'   },
+  return:  { border: 'border-dsa-green/40',   bg: 'bg-dsa-green/5',   badge: 'bg-dsa-green/20 text-dsa-green',     label: 'RETURN' },
+  error:   { border: 'border-destructive/40', bg: 'bg-destructive/5', badge: 'bg-destructive/20 text-destructive', label: 'ERROR'  },
 };
 
-const HIGHLIGHT_BADGE: Record<string, string> = {
-  normal:  'bg-primary/20 text-primary',
-  branch:  'bg-amber/20 text-amber',
-  loop:    'bg-purple/20 text-purple',
-  return:  'bg-dsa-green/20 text-dsa-green',
-  error:   'bg-destructive/20 text-destructive',
-};
+const SPEEDS = [
+  { label: '0.5×', ms: 2000 },
+  { label: '1×',   ms: 1000 },
+  { label: '1.5×', ms: 667  },
+  { label: '2×',   ms: 400  },
+];
 
-const HIGHLIGHT_LABEL: Record<string, string> = {
-  normal:  'EXEC',
-  branch:  'BRANCH',
-  loop:    'LOOP',
-  return:  'RETURN',
-  error:   'ERROR',
-};
+// ─── Loading state ───────────────────────────────────────────────────────────
+function LoadingSkeleton() {
+  return (
+    <div className="flex flex-col gap-5 p-3 animate-fade-in">
+      <div className="flex items-center gap-2 text-sm font-medium text-primary">
+        <span className="ai-pulse">●</span> Generating visual trace...
+      </div>
 
+      {/* Array skeleton */}
+      <div className="rounded-xl border border-border p-4 flex flex-col gap-3" style={{ background: 'hsl(222 50% 4% / 0.5)' }}>
+        <div className="flex gap-px">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="w-10 h-10 shimmer rounded-sm" style={{ animationDelay: `${i * 50}ms` }} />
+          ))}
+        </div>
+        <div className="flex gap-3 mt-1">
+          {['low=0','mid=?','high=7'].map((t, i) => (
+            <div key={i} className="h-2 w-12 shimmer rounded-full" style={{ animationDelay: `${i * 120}ms` }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Controls skeleton */}
+      <div className="flex gap-2 justify-center">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="w-8 h-8 shimmer rounded-lg" style={{ animationDelay: `${i * 80}ms` }} />
+        ))}
+      </div>
+
+      {/* Step skeleton */}
+      <div className="flex flex-col gap-2">
+        <div className="h-3 shimmer rounded-full w-3/4" />
+        <div className="h-3 shimmer rounded-full w-1/2" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty state ─────────────────────────────────────────────────────────────
+function EmptyState() {
+  return (
+    <div className="flex flex-col items-center text-center mt-6 px-3 animate-fade-in gap-3">
+      <div className="text-4xl">▶</div>
+      <p className="font-semibold text-foreground/80 text-sm">Algorithm Visualizer</p>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        Click <span className="text-primary font-mono">🔍 Dry Run</span> to see a step‑by‑step visual animation of your code with array states, pointers, and conceptual explanations.
+      </p>
+
+      {/* Preview array */}
+      <div className="mt-2 p-3 rounded-xl border border-border w-full" style={{ background: 'hsl(222 50% 4% / 0.5)' }}>
+        <div className="flex justify-center gap-px border border-border/50 rounded-md overflow-hidden mb-2 opacity-60">
+          {[2,5,8,12,16,23,38,56].map((v, i) => (
+            <div key={i} className={`w-9 h-9 flex items-center justify-center text-xs font-mono font-bold border-r border-border/30 last:border-r-0 ${i === 4 ? 'bg-primary/25 text-primary' : 'bg-card text-foreground/60'}`}>
+              {v}
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-center gap-4 text-[10px] font-mono opacity-50">
+          <span className="text-dsa-green">low=0</span>
+          <span className="text-primary">mid=4</span>
+          <span className="text-destructive">high=7</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5 text-left w-full px-1 mt-1">
+        {['Animated array cells with color states','Pointer labels (low/mid/high/i/j)','Play, pause & step-by-step controls','Conceptual explanations per step'].map(f => (
+          <div key={f} className="flex items-center gap-2 text-xs text-muted-foreground/70">
+            <span className="w-1 h-1 rounded-full bg-primary/60 flex-shrink-0" />
+            {f}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Panel ───────────────────────────────────────────────────────────────
 export default function DryRunPanel({ steps, isLoading, codeLines }: DryRunPanelProps) {
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [activeStep, setActiveStep] = useState<number | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [current, setCurrent] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [speedIdx, setSpeedIdx] = useState(1); // default 1×
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Animate steps appearing one by one
+  const totalSteps = steps.length;
+  const step = steps[current] || null;
+  const prevStep = steps[current - 1] || null;
+
+  // Auto-play
   useEffect(() => {
-    if (steps.length === 0) { setVisibleCount(0); return; }
-    setVisibleCount(0);
-    setActiveStep(null);
-    let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      setVisibleCount(i);
-      setActiveStep(i - 1);
-      if (i >= steps.length) clearInterval(interval);
-    }, 420);
-    return () => clearInterval(interval);
+    if (playing && current < totalSteps - 1) {
+      intervalRef.current = setInterval(() => {
+        setCurrent(c => {
+          if (c >= totalSteps - 1) { setPlaying(false); return c; }
+          return c + 1;
+        });
+      }, SPEEDS[speedIdx].ms);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (current >= totalSteps - 1) setPlaying(false);
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [playing, speedIdx, current, totalSteps]);
+
+  // Reset when steps change
+  useEffect(() => {
+    setCurrent(0);
+    setPlaying(false);
   }, [steps]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [visibleCount]);
+  const prev = useCallback(() => setCurrent(c => Math.max(0, c - 1)), []);
+  const next = useCallback(() => setCurrent(c => Math.min(totalSteps - 1, c + 1)), [totalSteps]);
+  const togglePlay = useCallback(() => {
+    if (current >= totalSteps - 1) { setCurrent(0); setPlaying(true); return; }
+    setPlaying(p => !p);
+  }, [current, totalSteps]);
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-4 p-2 animate-fade-in">
-        <div className="flex items-center gap-2 text-sm font-medium text-primary">
-          <span className="ai-pulse">●</span>
-          Tracing execution step by step...
-        </div>
-        {/* Array skeleton */}
-        <div className="rounded-lg border border-border p-3 flex flex-col gap-2">
-          <div className="flex gap-px">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="w-9 h-9 shimmer rounded-sm" style={{ animationDelay: `${i * 60}ms` }} />
-            ))}
-          </div>
-          <div className="flex gap-1 mt-1">
-            {['Low = 0', 'Mid = ?', 'High = ?'].map((label, i) => (
-              <div key={i} className="h-2 w-12 shimmer rounded-full" style={{ animationDelay: `${i * 120}ms` }} />
-            ))}
-          </div>
-        </div>
-        {/* Code steps skeleton */}
-        <div className="rounded-lg border border-border overflow-hidden">
-          {[1,2,3,4].map((_, i) => (
-            <div key={i} className="flex items-center gap-3 px-3 py-2 border-b border-border last:border-0"
-              style={{ animationDelay: `${i * 80}ms` }}>
-              <span className="text-xs text-muted-foreground/50 w-4 text-right font-mono">{i+1}</span>
-              <div className="h-2.5 rounded-full shimmer flex-1" style={{ width: `${[70,50,85,40][i]}%` }} />
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {['Parse', 'Init vars', 'Execute', 'Trace'].map((step, i) => (
-            <div key={step} className="flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-muted"
-              style={{ opacity: 0.3 + i * 0.2 }}>
-              <span className="w-1.5 h-1.5 rounded-full bg-primary pulse inline-block" />
-              {step}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingSkeleton />;
+  if (!steps.length) return <EmptyState />;
 
-  if (steps.length === 0) {
-    return (
-      <div className="text-muted-foreground text-sm text-center mt-8 animate-fade-in">
-        <div className="text-3xl mb-3 hover-scale inline-block cursor-default">🔍</div>
-        <p className="font-medium text-foreground/70">Step-by-step code trace</p>
-        <p className="mt-1 text-xs">AI will track every variable and animate array/pointer states</p>
-        {/* Mini array preview */}
-        <div className="mt-5 flex flex-col items-center gap-1">
-          <div className="flex gap-px border border-border rounded-md overflow-hidden opacity-40">
-            {[2, 5, 8, 12, 16, 23].map((v, i) => (
-              <div key={i} className={`w-8 h-8 flex items-center justify-center text-xs font-mono font-bold border-r border-border last:border-r-0 ${i === 2 ? 'bg-primary/20 text-primary' : 'bg-card text-foreground/60'}`}>
-                {v}
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-4 text-[10px] text-muted-foreground/50 font-mono">
-            <span className="text-dsa-green/50">low = 0</span>
-            <span className="text-primary/50">mid = 2</span>
-            <span className="text-destructive/50">high = 5</span>
-          </div>
-        </div>
-        <div className="mt-4 flex flex-col gap-1.5 text-left px-4">
-          {['Array visualization with pointers', 'Variable initialization', 'Loop iterations', 'Return values'].map((item) => (
-            <div key={item} className="flex items-center gap-2 text-xs text-muted-foreground/70">
-              <span className="w-1 h-1 rounded-full bg-primary/50 flex-shrink-0" />
-              {item}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const hl = HIGHLIGHT_COLORS[step?.highlight || 'normal'] || HIGHLIGHT_COLORS.normal;
+  const progress = totalSteps > 1 ? (current / (totalSteps - 1)) * 100 : 100;
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Header */}
-      <div className="flex items-center gap-2 pb-2 border-b border-border flex-shrink-0">
-        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-mono font-medium animate-fade-in">
-          🔍 {steps.length} Steps Traced
-        </span>
-        <span className="text-xs text-muted-foreground">{visibleCount}/{steps.length}</span>
-        {visibleCount < steps.length && (
-          <span className="ml-auto flex items-center gap-1 text-xs text-primary">
-            <span className="ai-pulse">●</span>
-          </span>
+    <div className="flex flex-col gap-0 h-full overflow-hidden">
+
+      {/* ── Progress bar ── */}
+      <div className="h-1 bg-muted flex-shrink-0">
+        <div className="h-full bg-primary transition-all duration-400 rounded-full"
+          style={{ width: `${progress}%` }} />
+      </div>
+
+      <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-3">
+
+        {/* ── Array Visualization ── */}
+        {step?.arrayState && (
+          <div className="rounded-xl border border-border p-4 flex-shrink-0 overflow-x-auto animate-fade-in"
+            style={{ background: 'hsl(222 50% 4% / 0.6)' }}>
+            <AlgoArray
+              arrayState={step.arrayState}
+              prevArrayState={prevStep?.arrayState}
+            />
+          </div>
         )}
-      </div>
 
-      {/* Steps */}
-      <div className="flex flex-col gap-4">
-        {steps.slice(0, visibleCount).map((step, idx) => {
-          const isActive = idx === activeStep;
-          const hlBorder = HIGHLIGHT_COLORS[step.highlight] || HIGHLIGHT_COLORS.normal;
-          const hlBadge  = HIGHLIGHT_BADGE[step.highlight]  || HIGHLIGHT_BADGE.normal;
-          const hlLabel  = HIGHLIGHT_LABEL[step.highlight]  || 'EXEC';
+        {/* ── Concept badge + explanation ── */}
+        <div className={`rounded-xl border p-3 flex flex-col gap-2 flex-shrink-0 transition-all duration-300 ${hl.border} ${hl.bg}`}>
+          <div className="flex items-center gap-2 flex-wrap">
+            {step?.conceptNote && (
+              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${hl.badge}`}>
+                ⚡ {step.conceptNote}
+              </span>
+            )}
+            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${hl.badge}`}>
+              {hl.label}
+            </span>
+            <span className="text-[10px] text-muted-foreground ml-auto font-mono">
+              Step {current + 1} / {totalSteps}
+            </span>
+          </div>
 
-          return (
-            <div
-              key={idx}
-              className={`rounded-xl border transition-all duration-300 overflow-hidden animate-fade-in ${hlBorder} ${
-                isActive ? 'shadow-lg shadow-primary/10 scale-[1.005]' : ''
-              }`}
-              onClick={() => setActiveStep(idx === activeStep ? null : idx)}
-              style={{ cursor: 'pointer' }}
-            >
-              {/* Step header: line number + code + type badge */}
-              <div className="flex items-center gap-2 px-3 py-2 border-b border-border/30">
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${hlBadge}`}>
-                  {idx + 1}
-                </span>
-                <code className="text-xs font-mono text-foreground/90 flex-1 truncate bg-black/20 px-2 py-0.5 rounded">
-                  <span className="text-muted-foreground/50 mr-2">L{step.line}</span>
-                  {step.code}
-                </code>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold flex-shrink-0 ${hlBadge}`}>
-                  {hlLabel}
-                </span>
-              </div>
+          {/* Code line */}
+          <code className="text-xs font-mono text-foreground/90 bg-black/30 px-3 py-1.5 rounded-lg block">
+            <span className="text-muted-foreground/50 mr-2 select-none">L{step?.line}</span>
+            {step?.code}
+          </code>
 
-              {/* Explanation */}
-              <div className="px-3 pt-2 pb-1">
-                <p className="text-xs text-foreground/80 leading-relaxed">{step.explanation}</p>
-              </div>
-
-              {/* Array Visualizer — shown if this step has array state */}
-              {step.arrayState && (
-                <div className="px-3 py-3 border-t border-border/20 overflow-x-auto"
-                  style={{ background: 'hsl(222 50% 4% / 0.6)' }}>
-                  <ArrayVisualizer
-                    arrayState={step.arrayState}
-                    animate={isActive}
-                  />
-                </div>
-              )}
-
-              {/* Variable state chips */}
-              {Object.keys(step.variables).length > 0 && (
-                <div className="px-3 pb-2 pt-1 flex flex-wrap gap-1.5">
-                  {Object.entries(step.variables).map(([k, v]) => (
-                    <div key={k}
-                      className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-md bg-black/20 border border-border/30">
-                      <span className="text-cyan">{k}</span>
-                      <span className="text-muted-foreground">=</span>
-                      <span className="text-dsa-green">{String(v)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Loading indicator for next step */}
-      {visibleCount < steps.length && (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-fade-in px-1">
-          <span className="ai-pulse text-primary">●</span>
-          Tracing step {visibleCount + 1} of {steps.length}...
+          {/* Explanation */}
+          <p className="text-sm text-foreground/85 leading-relaxed font-medium">
+            {step?.explanation}
+          </p>
         </div>
-      )}
 
-      <div ref={bottomRef} />
+        {/* ── Variable state ── */}
+        {step && Object.keys(step.variables).length > 0 && (
+          <div className="rounded-xl border border-border p-3 flex-shrink-0"
+            style={{ background: 'hsl(222 40% 7%)' }}>
+            <div className="text-[10px] text-muted-foreground font-mono mb-2 uppercase tracking-wider">Variables</div>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(step.variables).map(([k, v]) => (
+                <div key={k}
+                  className="flex items-center gap-1 text-[11px] font-mono px-2 py-1 rounded-lg bg-black/30 border border-border/40">
+                  <span className="text-cyan font-semibold">{k}</span>
+                  <span className="text-muted-foreground">=</span>
+                  <span className="text-dsa-green font-semibold">{String(v)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── All steps mini timeline ── */}
+        <div className="rounded-xl border border-border p-3 flex-shrink-0"
+          style={{ background: 'hsl(222 40% 7%)' }}>
+          <div className="text-[10px] text-muted-foreground font-mono mb-2 uppercase tracking-wider">Timeline</div>
+          <div className="flex gap-1 flex-wrap">
+            {steps.map((s, i) => {
+              const c = HIGHLIGHT_COLORS[s.highlight] || HIGHLIGHT_COLORS.normal;
+              return (
+                <button
+                  key={i}
+                  onClick={() => { setCurrent(i); setPlaying(false); }}
+                  className={`w-6 h-6 rounded text-[9px] font-mono font-bold transition-all duration-200 border ${
+                    i === current
+                      ? `${c.badge} border-current scale-110 shadow-md`
+                      : i < current
+                      ? 'bg-muted/60 text-muted-foreground/60 border-border/30'
+                      : 'bg-muted/20 text-muted-foreground/30 border-border/20'
+                  }`}
+                  title={`Step ${i + 1}: L${s.line}`}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Controls bar (fixed bottom) ── */}
+      <div className="flex-shrink-0 border-t border-border px-3 py-2.5 flex items-center gap-2"
+        style={{ background: 'hsl(var(--card))' }}>
+
+        {/* Prev */}
+        <button
+          onClick={prev}
+          disabled={current === 0}
+          className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-sm disabled:opacity-30 hover:border-primary/50 hover:text-primary transition-all"
+        >
+          ⏮
+        </button>
+
+        {/* Play/Pause */}
+        <button
+          onClick={togglePlay}
+          className="flex-1 h-9 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-200"
+          style={{ background: 'var(--gradient-cyan)', color: 'hsl(var(--primary-foreground))' }}
+        >
+          {playing ? '⏸ Pause' : current >= totalSteps - 1 ? '↺ Replay' : '▶ Play'}
+        </button>
+
+        {/* Next */}
+        <button
+          onClick={next}
+          disabled={current >= totalSteps - 1}
+          className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-sm disabled:opacity-30 hover:border-primary/50 hover:text-primary transition-all"
+        >
+          ⏭
+        </button>
+
+        {/* Speed selector */}
+        <div className="flex items-center gap-1 border border-border rounded-lg px-1 py-0.5">
+          {SPEEDS.map((s, i) => (
+            <button
+              key={i}
+              onClick={() => setSpeedIdx(i)}
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-all ${
+                speedIdx === i ? 'bg-primary text-primary-foreground font-bold' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
