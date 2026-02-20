@@ -230,9 +230,9 @@ export default function CodeEditorPage() {
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4">
             {activePanel === 'output' ? (
-              <div>
+              <div className="animate-fade-in">
                 {output ? (
                   <pre className="text-sm font-mono whitespace-pre-wrap leading-relaxed text-foreground">{output}</pre>
                 ) : (
@@ -245,18 +245,62 @@ export default function CodeEditorPage() {
             ) : (
               <div>
                 {loadingDryRun && !dryRunResult && (
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                    <span className="ai-pulse text-primary">●</span>
-                    Analyzing code step by step...
+                  <div className="flex flex-col gap-4 animate-fade-in">
+                    {/* Scanning header */}
+                    <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                      <span className="ai-pulse">●</span>
+                      Tracing execution step by step...
+                    </div>
+                    {/* Animated skeleton lines */}
+                    {[80, 60, 90, 50, 70].map((w, i) => (
+                      <div key={i} className="space-y-1.5" style={{ animationDelay: `${i * 100}ms` }}>
+                        <div
+                          className="h-2.5 rounded-full bg-primary/20 pulse"
+                          style={{ width: `${w}%` }}
+                        />
+                        {i % 2 === 0 && (
+                          <div className="h-2 rounded-full bg-muted pulse" style={{ width: `${w - 20}%` }} />
+                        )}
+                      </div>
+                    ))}
+                    {/* Step indicator */}
+                    <div className="flex gap-1.5 mt-2">
+                      {['Parse', 'Init', 'Execute', 'Trace'].map((step, i) => (
+                        <div key={step} className="flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-muted"
+                          style={{ opacity: 0.4 + i * 0.15 }}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary pulse inline-block" />
+                          {step}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {dryRunResult ? (
-                  <div className="prose-dark text-sm leading-relaxed whitespace-pre-wrap">{dryRunResult}</div>
+                  <div className="space-y-3 animate-fade-in">
+                    {/* Result header badge */}
+                    <div className="flex items-center gap-2 pb-2 border-b border-border">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-mono font-medium animate-scale-in">
+                        🔍 Dry Run Complete
+                      </span>
+                    </div>
+                    {/* Streaming content rendered line by line with stagger */}
+                    <div className="prose-dark text-sm leading-relaxed whitespace-pre-wrap font-mono text-foreground/90">
+                      {dryRunResult}
+                    </div>
+                  </div>
                 ) : !loadingDryRun && (
-                  <div className="text-muted-foreground text-sm text-center mt-8">
-                    <div className="text-3xl mb-2">🔍</div>
-                    <p>Click "Dry Run" to get a step-by-step explanation of your code</p>
-                    <p className="mt-2 text-xs">AI will trace variable values and explain each step</p>
+                  <div className="text-muted-foreground text-sm text-center mt-8 animate-fade-in">
+                    <div className="text-3xl mb-3 hover-scale inline-block cursor-default">🔍</div>
+                    <p className="font-medium text-foreground/70">Step-by-step code trace</p>
+                    <p className="mt-1 text-xs">AI will track every variable and explain each execution step</p>
+                    <div className="mt-4 flex flex-col gap-1.5 text-left px-4">
+                      {['Variable initialization', 'Loop iterations', 'Function calls', 'Return values'].map((item, i) => (
+                        <div key={item} className="flex items-center gap-2 text-xs text-muted-foreground/70">
+                          <span className="w-1 h-1 rounded-full bg-primary/50 flex-shrink-0" />
+                          {item}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
