@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import Editor from '@monaco-editor/react';
 
-const JUDGE0_URL = 'https://judge0-ce.p.rapidapi.com';
+const JUDGE0_URL = 'https://ce.judge0.com';
 
 const DEFAULT_CODE: Record<Language, string> = {
   python: `# Write your code here
@@ -64,8 +64,6 @@ export default function CodeEditorPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-          'X-RapidAPI-Key': 'DEMO',
         },
         body: JSON.stringify({
           source_code: code,
