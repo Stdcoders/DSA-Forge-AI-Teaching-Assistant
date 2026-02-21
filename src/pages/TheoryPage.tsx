@@ -15,6 +15,12 @@ const TOPIC_COLORS: Record<string, string> = {
   green: 'hsl(var(--green))',
 };
 
+const LEVEL_PROGRESS: Record<string, number> = {
+  beginner: 33,
+  intermediate: 66,
+  advanced: 100,
+};
+
 export default function TheoryPage() {
   const { topicId } = useParams<{ topicId: string }>();
   const navigate = useNavigate();
@@ -25,6 +31,7 @@ export default function TheoryPage() {
 
   const [selectedLang, setSelectedLang] = useState<Language>(preferredLang);
   const [markingComplete, setMarkingComplete] = useState(false);
+  const [activeLevel, setActiveLevel] = useState('beginner');
 
   if (!topic) {
     return (
@@ -65,7 +72,7 @@ export default function TheoryPage() {
       </div>
 
       {/* Header */}
-      <div className="rounded-xl border p-6"
+      <div className="rounded-xl border p-6 stagger-fade"
         style={{ background: 'var(--gradient-card)', borderColor: accentColor + '40' }}>
         <div className="flex items-start gap-4">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl flex-shrink-0"
@@ -94,8 +101,8 @@ export default function TheoryPage() {
 
       {/* What & Why */}
       <Accordion type="multiple" defaultValue={['what', 'why']} className="space-y-3">
-        <AccordionItem value="what" className="rounded-xl border border-border overflow-hidden"
-          style={{ background: 'var(--gradient-card)' }}>
+        <AccordionItem value="what" className="rounded-xl border border-border overflow-hidden stagger-fade"
+          style={{ background: 'var(--gradient-card)', animationDelay: '0.1s' }}>
           <AccordionTrigger className="px-5 py-4 hover:no-underline">
             <div className="flex items-center gap-3">
               <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
@@ -114,8 +121,8 @@ export default function TheoryPage() {
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="why" className="rounded-xl border border-border overflow-hidden"
-          style={{ background: 'var(--gradient-card)' }}>
+        <AccordionItem value="why" className="rounded-xl border border-border overflow-hidden stagger-fade"
+          style={{ background: 'var(--gradient-card)', animationDelay: '0.15s' }}>
           <AccordionTrigger className="px-5 py-4 hover:no-underline">
             <div className="flex items-center gap-3">
               <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
@@ -129,18 +136,28 @@ export default function TheoryPage() {
         </AccordionItem>
       </Accordion>
 
-      {/* Theory Levels: Beginner / Intermediate / Advanced */}
+      {/* Theory Levels with progress bar and animations */}
       {hasTheoryLevels && (
-        <div className="rounded-xl border border-border overflow-hidden"
-          style={{ background: 'var(--gradient-card)' }}>
+        <div className="rounded-xl border border-border overflow-hidden stagger-fade"
+          style={{ background: 'var(--gradient-card)', animationDelay: '0.2s' }}>
           <div className="px-5 py-4 border-b border-border">
-            <h2 className="font-semibold flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
-                style={{ background: accentColor + '20', color: accentColor }}>&lt;/&gt;</span>
-              Theory & Code Examples
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+                  style={{ background: accentColor + '20', color: accentColor }}>&lt;/&gt;</span>
+                Theory & Code Examples
+              </h2>
+              <span className="text-xs text-muted-foreground">
+                {activeLevel === 'beginner' ? '🟢 Beginner' : activeLevel === 'intermediate' ? '🟡 Intermediate' : '🔴 Advanced'}
+              </span>
+            </div>
+            {/* Progress bar */}
+            <div className="mt-3 w-full bg-muted rounded-full overflow-hidden h-1">
+              <div className="theory-progress-bar h-full rounded-full"
+                style={{ width: `${LEVEL_PROGRESS[activeLevel]}%`, background: accentColor }} />
+            </div>
           </div>
-          <Tabs defaultValue="beginner" className="p-5">
+          <Tabs defaultValue="beginner" className="p-5" onValueChange={setActiveLevel}>
             <TabsList className="w-full grid grid-cols-3 mb-4">
               <TabsTrigger value="beginner" className="text-xs sm:text-sm">🟢 Beginner</TabsTrigger>
               <TabsTrigger value="intermediate" className="text-xs sm:text-sm">🟡 Intermediate</TabsTrigger>
@@ -148,7 +165,7 @@ export default function TheoryPage() {
             </TabsList>
 
             {(['beginner', 'intermediate', 'advanced'] as const).map(level => (
-              <TabsContent key={level} value={level} className="space-y-4">
+              <TabsContent key={level} value={level} className="space-y-4 tab-slide-in">
                 <div>
                   <h3 className="font-semibold text-lg">{topic.theoryLevels![level].title}</h3>
                   <p className="text-muted-foreground leading-relaxed mt-2 whitespace-pre-line">
@@ -157,7 +174,7 @@ export default function TheoryPage() {
                 </div>
 
                 {/* Language selector + code */}
-                <div>
+                <div className="code-reveal">
                   <div className="flex gap-2 mb-3">
                     {(['python', 'java', 'cpp'] as Language[]).map(lang => (
                       <button key={lang} onClick={() => setSelectedLang(lang)}
@@ -225,8 +242,8 @@ export default function TheoryPage() {
 
       {/* Complexity */}
       <Accordion type="multiple" defaultValue={['complexity', 'problems']} className="space-y-3">
-        <AccordionItem value="complexity" className="rounded-xl border border-border overflow-hidden"
-          style={{ background: 'var(--gradient-card)' }}>
+        <AccordionItem value="complexity" className="rounded-xl border border-border overflow-hidden stagger-fade"
+          style={{ background: 'var(--gradient-card)', animationDelay: '0.25s' }}>
           <AccordionTrigger className="px-5 py-4 hover:no-underline">
             <div className="flex items-center gap-3">
               <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
@@ -265,8 +282,8 @@ export default function TheoryPage() {
         </AccordionItem>
 
         {/* Practice Problems */}
-        <AccordionItem value="problems" className="rounded-xl border border-border overflow-hidden"
-          style={{ background: 'var(--gradient-card)' }}>
+        <AccordionItem value="problems" className="rounded-xl border border-border overflow-hidden stagger-fade"
+          style={{ background: 'var(--gradient-card)', animationDelay: '0.3s' }}>
           <AccordionTrigger className="px-5 py-4 hover:no-underline">
             <div className="flex items-center gap-3">
               <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
@@ -276,8 +293,14 @@ export default function TheoryPage() {
           </AccordionTrigger>
           <AccordionContent className="px-5 pb-5">
             <div className="space-y-3">
-              {topic.problems.map(problem => (
-                <div key={problem.id} className="flex items-center justify-between p-3 rounded-lg bg-muted border border-border hover:border-primary/50 transition-colors">
+              {topic.problems.map((problem, idx) => (
+                <div key={problem.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted border border-border problem-card-glow stagger-fade"
+                  style={{
+                    animationDelay: `${idx * 0.06}s`,
+                    '--glow-color': accentColor.replace(')', ' / 0.3)').replace('hsl(', 'hsl('),
+                    '--glow-border': accentColor.replace(')', ' / 0.5)').replace('hsl(', 'hsl('),
+                  } as React.CSSProperties}>
                   <div className="flex items-center gap-3">
                     <span className={`text-xs px-2 py-0.5 rounded border ${
                       problem.difficulty === 'easy' ? 'badge-easy' :
@@ -299,7 +322,7 @@ export default function TheoryPage() {
       </Accordion>
 
       {/* CTA */}
-      <div className="flex gap-3 pt-2">
+      <div className="flex gap-3 pt-2 stagger-fade" style={{ animationDelay: '0.35s' }}>
         <Button onClick={() => navigate(`/practice?topic=${topic.id}`)}
           style={{ background: accentColor, color: '#0a0f1e' }} className="flex-1">
           Start Practice →
