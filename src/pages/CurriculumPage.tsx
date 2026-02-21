@@ -18,10 +18,10 @@ export default function CurriculumPage() {
     <div className="p-6 space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold">DSA Curriculum</h1>
-        <p className="text-muted-foreground mt-1">Master each topic in order — prerequisites unlock as you progress</p>
+        <p className="text-muted-foreground mt-1">30 topics from basics to advanced — all unlocked for you</p>
       </div>
 
-      {/* Dependency flow visualization */}
+      {/* Learning Path */}
       <div className="rounded-xl border border-border p-5 overflow-x-auto"
         style={{ background: 'var(--gradient-card)' }}>
         <h3 className="font-semibold mb-4 text-sm text-muted-foreground uppercase tracking-wider">Learning Path</h3>
@@ -31,24 +31,20 @@ export default function CurriculumPage() {
             const color = TOPIC_COLORS[topic.color] || 'hsl(var(--primary))';
             return (
               <div key={topic.id} className="flex items-center gap-2">
-                <button onClick={() => status !== 'locked' && navigate(`/curriculum/${topic.id}`)}
-                  className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all duration-200 min-w-[80px]
-                    ${status === 'locked' ? 'opacity-50 cursor-not-allowed border-border' : 'cursor-pointer hover:scale-105'}
-                    ${status === 'completed' ? 'topic-node-completed' : ''}
-                    ${status === 'unlocked' || status === 'in-progress' ? 'topic-node-active' : ''}
+                <button onClick={() => navigate(`/curriculum/${topic.id}`)}
+                  className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all duration-200 min-w-[80px] cursor-pointer hover:scale-105
+                    ${status === 'completed' ? 'topic-node-completed' : 'topic-node-active'}
                   `}
-                  style={status !== 'locked' ? { borderColor: color + '60' } : {}}>
+                  style={{ borderColor: color + '60' }}>
                   <span className="text-xl">{topic.icon}</span>
                   <span className="text-xs font-medium text-center leading-tight">{topic.title}</span>
                   <div className={`text-xs px-2 py-0.5 rounded-full ${
                     status === 'completed' ? 'bg-dsa-green/20 text-dsa-green' :
                     status === 'in-progress' ? 'bg-primary/20 text-primary' :
-                    status === 'unlocked' ? 'bg-amber/20 text-amber' :
-                    'bg-muted text-muted-foreground'
+                    'bg-amber/20 text-amber'
                   }`}>
                     {status === 'completed' ? '✓ Done' :
-                     status === 'in-progress' ? '▶ Active' :
-                     status === 'unlocked' ? 'Start' : '🔒'}
+                     status === 'in-progress' ? '▶ Active' : 'Start'}
                   </div>
                 </button>
                 {i < TOPICS.length - 1 && (
@@ -70,14 +66,11 @@ export default function CurriculumPage() {
 
           return (
             <div key={topic.id}
-              className={`rounded-xl border p-5 flex flex-col gap-4 transition-all duration-200
-                ${status === 'locked' ? 'opacity-60' : 'card-hover'}
-              `}
+              className="rounded-xl border p-5 flex flex-col gap-4 transition-all duration-200 card-hover"
               style={{
                 background: 'var(--gradient-card)',
-                borderColor: status === 'locked' ? 'hsl(var(--border))' : color + '40',
+                borderColor: color + '40',
               }}>
-              {/* Header */}
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
                   style={{ background: color + '20', border: `1px solid ${color}40` }}>
@@ -89,32 +82,22 @@ export default function CurriculumPage() {
                     <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
                       status === 'completed' ? 'bg-dsa-green/20 text-dsa-green' :
                       status === 'in-progress' ? 'bg-primary/20 text-primary' :
-                      status === 'unlocked' ? 'bg-amber/20 text-amber' :
-                      'bg-muted text-muted-foreground'
+                      'bg-amber/20 text-amber'
                     }`}>
                       {status === 'completed' ? '✓ Completed' :
-                       status === 'in-progress' ? '▶ In Progress' :
-                       status === 'unlocked' ? 'Ready' : '🔒 Locked'}
+                       status === 'in-progress' ? '▶ In Progress' : 'Ready'}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{topic.definition}</p>
                 </div>
               </div>
 
-              {/* Meta */}
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>⏱ {topic.estimatedHours}h</span>
                 <span>·</span>
                 <span>{topic.problems.length} problems</span>
-                {topic.prerequisites.length > 0 && (
-                  <>
-                    <span>·</span>
-                    <span>Requires: {topic.prerequisites.map(id => TOPICS.find(t => t.id === id)?.title).join(', ')}</span>
-                  </>
-                )}
               </div>
 
-              {/* Mastery Bar */}
               {p && p.attempts > 0 && (
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-muted-foreground">
@@ -133,16 +116,13 @@ export default function CurriculumPage() {
                 </div>
               )}
 
-              {/* Actions */}
               <div className="flex gap-2 mt-auto">
                 <Button size="sm" className="flex-1"
-                  disabled={status === 'locked'}
                   onClick={() => navigate(`/curriculum/${topic.id}`)}
-                  style={status !== 'locked' ? { background: color + 'dd', color: '#0a0f1e' } : {}}>
-                  {status === 'completed' ? 'Review' : status === 'in-progress' ? 'Continue' : status === 'unlocked' ? 'Start' : 'Locked'}
+                  style={{ background: color + 'dd', color: '#0a0f1e' }}>
+                  {status === 'completed' ? 'Review' : status === 'in-progress' ? 'Continue' : 'Start'}
                 </Button>
                 <Button size="sm" variant="outline"
-                  disabled={status === 'locked'}
                   onClick={() => navigate(`/practice?topic=${topic.id}`)}>
                   Practice
                 </Button>

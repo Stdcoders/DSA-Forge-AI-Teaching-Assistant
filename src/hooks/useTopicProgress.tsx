@@ -19,7 +19,10 @@ export function useTopicProgress() {
   const [loading, setLoading] = useState(true);
 
   const fetchProgress = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase
       .from('user_topic_progress')
@@ -40,10 +43,9 @@ export function useTopicProgress() {
     fetchProgress();
   }, [fetchProgress]);
 
-  // Initialize progress for new user — unlock first topic
   const initializeProgress = useCallback(async () => {
     if (!user) return;
-    const firstTopic = TOPICS.find(t => t.prerequisites.length === 0);
+    const firstTopic = TOPICS[0];
     if (!firstTopic) return;
 
     const { data: existing } = await supabase
@@ -85,46 +87,19 @@ export function useTopicProgress() {
         ...prev,
         [topicId]: { ...prev[topicId], topic_id: topicId, ...update } as TopicProgress,
       }));
-
-      // Check if topic completed and unlock next topics
       if (update.completed) {
-        const topic = TOPICS.find(t => t.id === topicId);
-        if (topic) {
-          for (const nextTopicId of topic.nextTopics) {
-            // Check if all prerequisites of next topic are completed
-            const nextTopic = TOPICS.find(t => t.id === nextTopicId);
-            if (nextTopic) {
-              const allPrereqsDone = nextTopic.prerequisites.every(prereqId => {
-                const prereqProgress = progress[prereqId];
-                return prereqProgress?.completed || (update.completed && prereqId === topicId);
-              });
-              if (allPrereqsDone) {
-                await supabase.from('user_topic_progress').upsert({
-                  user_id: user.id,
-                  topic_id: nextTopicId,
-                  unlocked: true,
-                }, { onConflict: 'user_id,topic_id' });
-              }
-            }
-          }
-          await fetchProgress();
-        }
+        await fetchProgress();
       }
     }
-  }, [user, progress, fetchProgress]);
+  }, [user, fetchProgress]);
 
-  const getTopicStatus = (topicId: string): 'locked' | 'unlocked' | 'in-progress' | 'completed' => {
+  // Simplified: no locking, all topics accessible
+  const getTopicStatus = (topicId: string): 'unlocked' | 'in-progress' | 'completed' => {
     const p = progress[topicId];
-    if (!p) {
-      // Check if it has no prerequisites
-      const topic = TOPICS.find(t => t.id === topicId);
-      if (topic?.prerequisites.length === 0) return 'unlocked';
-      return 'locked';
-    }
+    if (!p) return 'unlocked';
     if (p.completed) return 'completed';
-    if (p.unlocked && p.attempts > 0) return 'in-progress';
-    if (p.unlocked) return 'unlocked';
-    return 'locked';
+    if (p.attempts > 0) return 'in-progress';
+    return 'unlocked';
   };
 
   const completedCount = Object.values(progress).filter(p => p.completed).length;
