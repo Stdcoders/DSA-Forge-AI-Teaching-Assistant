@@ -1,116 +1,165 @@
 
-## DSA Forge — MVP Build Plan
 
-### Overview
-A dark-themed, interactive DSA learning platform built with React + Tailwind CSS on the frontend, Supabase (Auth + PostgreSQL + Edge Functions) for the backend, Lovable AI for the intelligent chatbot/code explanation, and Judge0 public API for real-time code execution.
+# Plan: Restructure DSA Forge - Open Access, Expanded Syllabus, and Leveled Theory
 
----
+## Summary of Changes
 
-### 1. 🔐 Auth & Onboarding
-- **Register / Login** screens with Supabase email authentication
-- **Onboarding wizard** (first-time users only): collects experience level (Beginner / Intermediate / Advanced), preferred coding language (Python / Java / C++), and learning goal
-- Profile data saved to a `profiles` table in Supabase
-- On completion, a personalized roadmap is generated and stored
+Three major changes:
+1. Remove sign-in gate -- app opens directly to Dashboard; sign-in/register buttons go in the top header bar
+2. Expand the syllabus from 7 topics to ~30 topics (Flowcharts through Segment Trees, matching the reference image)
+3. Restructure each topic's theory into Beginner / Medium / Advanced levels; remove all topic locking
 
 ---
 
-### 2. 🧭 Navigation & Layout
-- Persistent **sidebar** with: Dashboard, Curriculum, Code Editor, Practice, Progress
-- Top bar with user avatar, streak indicator, and a floating AI assistant button
-- Dark modern theme (deep navy/slate background, neon cyan/purple accents matching the DSAForge logo aesthetic)
-- Fully responsive layout
+## 1. Remove Sign-In Gate, Add Auth to Top Bar
+
+**Current behavior:** If no user is logged in, the entire app shows the AuthPage (login wall).
+
+**New behavior:**
+- The app loads directly into the Dashboard/AppLayout for everyone -- no login required
+- The top header bar (in AppLayout) gets "Sign In" and "Register" buttons on the right side
+- Clicking either opens a dialog/modal with the auth form
+- If the user is signed in, show their profile avatar + logout button in the header instead
+- Progress saving (topic progress, submissions, daily activity) only works when signed in -- gracefully skip DB writes when not authenticated
+- Remove the onboarding redirect gate (onboarding can be shown after first sign-in)
+
+**Files changed:**
+- `src/App.tsx` -- Remove the `if (!user) return <AuthPage />` and onboarding gate; always render AppLayout with routes
+- `src/components/AppLayout.tsx` -- Add Sign In / Register buttons to the header; show user avatar when logged in; add auth dialog state
+- `src/pages/AuthPage.tsx` -- Refactor into a reusable AuthDialog component that can be triggered from the header
+- `src/hooks/useAuth.tsx` -- Make hooks safe when user is null (already mostly handles this)
+- `src/hooks/useTopicProgress.tsx` -- Guard all DB calls with `if (!user) return` so anonymous users don't hit errors
 
 ---
 
-### 3. 📊 Dashboard
-- **Progress ring** showing overall completion percentage
-- **Completed topics** list with checkmarks
-- **Weak topics** highlighted in amber
-- **Suggested next topic** card with a "Start Learning" CTA
-- **Practice stats**: total attempts, accuracy rate, current streak
-- Simple bar chart showing activity over the past 7 days
+## 2. Expand Syllabus to 30 Topics
+
+Replace the current 7-topic `TOPICS` array with the full syllabus from the reference image:
+
+1. Flowcharts
+2. Variables and Data Types
+3. Operators
+4. If-Else Statements
+5. Flow Control (Loops)
+6. Patterns
+7. Functions and Methods
+8. Arrays
+9. Sorting Algorithms
+10. 2D Arrays
+11. Strings
+12. Bit Manipulation
+13. OOPs
+14. Recursion
+15. Divide and Conquer
+16. Backtracking
+17. Time and Space Complexity
+18. ArrayLists
+19. Linked Lists
+20. Stacks
+21. Queues
+22. Greedy Algorithms
+23. Binary Trees
+24. Binary Search Trees
+25. Heaps / Priority Queues
+26. Hashing
+27. Tries
+28. Graphs
+29. Dynamic Programming
+30. Segment Trees
+
+**Key changes:**
+- All topics have `prerequisites: []` (no locking)
+- `nextTopics: []` for all (no dependency chain)
+- Each topic gets a basic definition, analogy, whyUseIt, timeComplexity, spaceComplexity, and code examples
+- Each topic gets 2-3 practice problems (easy/medium/hard)
+- Existing detailed topics (Arrays, Recursion, Linked Lists, etc.) keep their current content; new topics get concise but useful content
+
+**Files changed:**
+- `src/data/curriculum.ts` -- Major rewrite to add all 30 topics with no prerequisites
 
 ---
 
-### 4. 📚 Curriculum (Hardcoded Content)
-- **Dependency graph visualization**: Arrays → Recursion → Linked List → Stack/Queue → Trees → Graphs → DP
-- Topic cards showing: title, difficulty level, prerequisites, completion status
-- Clicking a topic opens the **Theory Page**
+## 3. Leveled Theory (Beginner / Medium / Advanced)
+
+**Current behavior:** Each topic has a single flat theory section.
+
+**New behavior:** Add a `theoryLevels` field to the `TopicContent` interface:
+
+```
+theoryLevels: {
+  beginner: { title, content, codeExample };
+  intermediate: { title, content, codeExample };
+  advanced: { title, content, codeExample };
+}
+```
+
+- The TheoryPage shows 3 tabs or accordion sections: "Beginner", "Intermediate", "Advanced"
+- Each level has its own explanation and code example appropriate to that difficulty
+- Practice problems are grouped by difficulty under the theory
+
+**Files changed:**
+- `src/data/curriculum.ts` -- Add `theoryLevels` to the interface and populate for all 30 topics
+- `src/pages/TheoryPage.tsx` -- Add tabs for Beginner / Intermediate / Advanced; render level-specific content
 
 ---
 
-### 5. 📖 Theory Page (per topic)
-- Sectioned, expandable layout:
-  - **What is it?** — Definition + real-world analogy
-  - **Why use it?** — Use cases and motivation
-  - **Code Example** — Syntax-highlighted snippet in user's preferred language
-  - **Complexity** — Time & Space complexity table
-  - **Difficulty Ladder** — Easy → Medium → Hard problems listed
-- Prerequisite check banner (e.g., "Complete Arrays first")
-- **"Start Practice"** button that navigates to the practice page for that topic
-- Embedded **AI Chatbot** panel (context-aware — knows the current topic)
+## 4. Remove All Locking Logic
+
+- `src/pages/CurriculumPage.tsx` -- Remove locked/unlocked status badges and locked styling; all topics show as accessible
+- `src/pages/TheoryPage.tsx` -- Remove the "Topic Locked" section and prerequisite warnings
+- `src/hooks/useTopicProgress.tsx` -- Simplify `getTopicStatus` to only return 'unlocked', 'in-progress', or 'completed' (never 'locked')
 
 ---
 
-### 6. 🤖 AI Chatbot (Lovable AI)
-- Floating chat button accessible from anywhere
-- Full chat panel with conversation history
-- **Context-aware**: knows user's profile, current topic, experience level
-- Capabilities:
-  - Explain concepts and doubts
-  - Suggest structured roadmap (rule-based gating: prerequisites must be met)
-  - Guide Easy → Medium → Hard progression
-  - Answer "what should I study next?" questions
-- Powered by Supabase Edge Function calling Lovable AI gateway (Gemini Flash)
+## Technical Details
 
----
+### Updated TopicContent Interface
+```typescript
+interface TheoryLevel {
+  title: string;
+  content: string;
+  codeExample: Record<Language, string>;
+}
 
-### 7. 💻 Code Editor Page
-- **Monaco Editor** (VS Code-style) with syntax highlighting
-- Language selector (Python / Java / C++)
-- **Run Code** button → calls Judge0 public API → displays stdout/stderr output
-- **Dry Run button** → sends code to AI edge function → returns step-by-step variable tracking explanation
-- Split layout: Editor (left) | Output + AI Explanation (right)
-- AI Explanation panel shows: mistake detection (Syntax / Logical / Conceptual), what each step does, suggested fix
+interface TopicContent {
+  id: string;
+  title: string;
+  icon: string;
+  color: string;
+  order: number;
+  prerequisites: string[]; // always empty now
+  nextTopics: string[];    // always empty now
+  estimatedHours: number;
+  definition: string;
+  analogy: string;
+  whyUseIt: string;
+  theoryLevels: {
+    beginner: TheoryLevel;
+    intermediate: TheoryLevel;
+    advanced: TheoryLevel;
+  };
+  timeComplexity: { operation: string; best: string; average: string; worst: string }[];
+  spaceComplexity: string;
+  codeExamples: Record<Language, string>;
+  problems: Problem[];
+}
+```
 
----
+### Auth Flow Change
+- `AppRoutes` always renders `<AppLayout><Routes>...</Routes></AppLayout>`
+- A new `<AuthDialog>` component wraps the existing auth form in a modal dialog
+- AppLayout header: if logged in shows avatar + logout; if not shows "Sign In" / "Register" buttons that open the dialog
+- Onboarding shows as a banner/prompt after first sign-in rather than a full-page redirect
 
-### 8. 🧪 Practice System
-- Topic-wise question list with difficulty filter (Easy / Medium / Hard)
-- Each problem has: description, input/output examples, constraints
-- Built-in code editor (Monaco) for submitting solutions
-- **Submit** → Judge0 validates against test cases → shows pass/fail per test case
-- Submission history stored in Supabase (`submissions` table)
-- **AI Feedback** button: explains what went wrong and how to improve
+### Files Modified (Summary)
+| File | Change |
+|------|--------|
+| `src/App.tsx` | Remove auth gate, always show routes |
+| `src/components/AppLayout.tsx` | Add auth buttons to header, auth dialog |
+| `src/components/AuthDialog.tsx` | New -- reusable auth modal |
+| `src/data/curriculum.ts` | Expand to 30 topics, add theoryLevels, remove prerequisites |
+| `src/pages/TheoryPage.tsx` | Add Beginner/Intermediate/Advanced tabs, remove lock UI |
+| `src/pages/CurriculumPage.tsx` | Remove lock styling, simplify status display |
+| `src/hooks/useTopicProgress.tsx` | Remove lock logic, guard for anonymous users |
+| `src/pages/Onboarding.tsx` | Show conditionally after sign-in instead of as gate |
 
----
-
-### 9. 📈 Progress Tracking
-- Supabase stores: topic mastery score, accuracy %, attempt counts, learning streak
-- Progress page shows:
-  - Per-topic progress bars
-  - Overall accuracy chart (Recharts)
-  - Weak topics section with recommended resources
-  - Streak calendar (similar to GitHub contribution graph)
-
----
-
-### 🗄️ Database Schema (Supabase)
-- `profiles` — user info, experience level, language, goal, streak
-- `user_topic_progress` — topic mastery score, attempts, accuracy per user
-- `submissions` — code submissions with verdict and timestamp
-- `roadmap_state` — which topics are unlocked/completed per user
-
----
-
-### 🔧 Edge Functions (Supabase)
-- `ai-chat` — Curriculum-aware chatbot with user profile context (streaming)
-- `dry-run-explain` — Sends code to Lovable AI for step-by-step dry run explanation
-- `ai-feedback` — Analyzes submission and returns structured feedback
-
----
-
-### 🎨 Design System
-- Color palette inspired by DSAForge logo: deep navy (`#0a0f1e`) background, electric cyan + neon purple accents, metallic silver text
-- Fonts: modern monospace for code, clean sans-serif for UI
-- Micro-animations on topic unlock, streak milestone, test case pass
