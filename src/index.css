@@ -242,3 +242,44 @@
   border: none;
   padding: 0;
 }
+
+/* ─── Theory Page Animations ─── */
+@keyframes stagger-fade {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes code-reveal {
+  from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes tab-slide-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.stagger-fade {
+  animation: stagger-fade 0.5s ease-out both;
+}
+.code-reveal {
+  animation: code-reveal 0.4s ease-out 0.15s both;
+}
+.tab-slide-in {
+  animation: tab-slide-in 0.35s ease-out both;
+}
+
+/* Hover glow on practice problem cards */
+.problem-card-glow {
+  transition: all 0.3s ease;
+}
+.problem-card-glow:hover {
+  box-shadow: 0 0 16px var(--glow-color, hsl(var(--primary) / 0.3));
+  border-color: var(--glow-border, hsl(var(--primary) / 0.5)) !important;
+  transform: translateX(4px);
+}
+
+/* Theory level progress bar */
+.theory-progress-bar {
+  height: 3px;
+  border-radius: 2px;
+  transition: width 0.4s ease-out;
+}

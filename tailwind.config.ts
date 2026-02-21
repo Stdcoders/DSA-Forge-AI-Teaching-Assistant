@@ -105,6 +105,9 @@ export default {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         shimmer: "shimmer 1.5s infinite",
+        "stagger-fade": "stagger-fade 0.5s ease-out both",
+        "code-reveal": "code-reveal 0.4s ease-out 0.15s both",
+        "tab-slide-in": "tab-slide-in 0.35s ease-out both",
       },
       backgroundImage: {
         "gradient-hero": "var(--gradient-hero)",
