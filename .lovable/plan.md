@@ -1,165 +1,123 @@
 
+# Plan: Complete Theory Content + Animated Learning for All 30 Topics
 
-# Plan: Restructure DSA Forge - Open Access, Expanded Syllabus, and Leveled Theory
+## What's Changing
 
-## Summary of Changes
+The curriculum currently has 30 topics, but only the first 9 (Flowcharts through Sorting) have real theory content. Topics 10-30 (2D Arrays through Segment Trees) have placeholder text like "Coming soon." This plan fills in all content and adds animated transitions for a polished learning experience.
 
-Three major changes:
-1. Remove sign-in gate -- app opens directly to Dashboard; sign-in/register buttons go in the top header bar
-2. Expand the syllabus from 7 topics to ~30 topics (Flowcharts through Segment Trees, matching the reference image)
-3. Restructure each topic's theory into Beginner / Medium / Advanced levels; remove all topic locking
+## Content Structure Per Topic
 
----
-
-## 1. Remove Sign-In Gate, Add Auth to Top Bar
-
-**Current behavior:** If no user is logged in, the entire app shows the AuthPage (login wall).
-
-**New behavior:**
-- The app loads directly into the Dashboard/AppLayout for everyone -- no login required
-- The top header bar (in AppLayout) gets "Sign In" and "Register" buttons on the right side
-- Clicking either opens a dialog/modal with the auth form
-- If the user is signed in, show their profile avatar + logout button in the header instead
-- Progress saving (topic progress, submissions, daily activity) only works when signed in -- gracefully skip DB writes when not authenticated
-- Remove the onboarding redirect gate (onboarding can be shown after first sign-in)
-
-**Files changed:**
-- `src/App.tsx` -- Remove the `if (!user) return <AuthPage />` and onboarding gate; always render AppLayout with routes
-- `src/components/AppLayout.tsx` -- Add Sign In / Register buttons to the header; show user avatar when logged in; add auth dialog state
-- `src/pages/AuthPage.tsx` -- Refactor into a reusable AuthDialog component that can be triggered from the header
-- `src/hooks/useAuth.tsx` -- Make hooks safe when user is null (already mostly handles this)
-- `src/hooks/useTopicProgress.tsx` -- Guard all DB calls with `if (!user) return` so anonymous users don't hit errors
-
----
-
-## 2. Expand Syllabus to 30 Topics
-
-Replace the current 7-topic `TOPICS` array with the full syllabus from the reference image:
-
-1. Flowcharts
-2. Variables and Data Types
-3. Operators
-4. If-Else Statements
-5. Flow Control (Loops)
-6. Patterns
-7. Functions and Methods
-8. Arrays
-9. Sorting Algorithms
-10. 2D Arrays
-11. Strings
-12. Bit Manipulation
-13. OOPs
-14. Recursion
-15. Divide and Conquer
-16. Backtracking
-17. Time and Space Complexity
-18. ArrayLists
-19. Linked Lists
-20. Stacks
-21. Queues
-22. Greedy Algorithms
-23. Binary Trees
-24. Binary Search Trees
-25. Heaps / Priority Queues
-26. Hashing
-27. Tries
-28. Graphs
-29. Dynamic Programming
-30. Segment Trees
-
-**Key changes:**
-- All topics have `prerequisites: []` (no locking)
-- `nextTopics: []` for all (no dependency chain)
-- Each topic gets a basic definition, analogy, whyUseIt, timeComplexity, spaceComplexity, and code examples
-- Each topic gets 2-3 practice problems (easy/medium/hard)
-- Existing detailed topics (Arrays, Recursion, Linked Lists, etc.) keep their current content; new topics get concise but useful content
-
-**Files changed:**
-- `src/data/curriculum.ts` -- Major rewrite to add all 30 topics with no prerequisites
-
----
-
-## 3. Leveled Theory (Beginner / Medium / Advanced)
-
-**Current behavior:** Each topic has a single flat theory section.
-
-**New behavior:** Add a `theoryLevels` field to the `TopicContent` interface:
+Every topic will follow this exact structure:
 
 ```
-theoryLevels: {
-  beginner: { title, content, codeExample };
-  intermediate: { title, content, codeExample };
-  advanced: { title, content, codeExample };
-}
+Topic (e.g., Arrays)
+  |-- What is it? (definition + real-world analogy)
+  |-- Why use it?
+  |-- Beginner Level
+  |     |-- Theory explanation (concepts, terminology, memory model)
+  |     |-- Code examples (Python, Java, C++)
+  |     |-- Practice problems (easy difficulty)
+  |-- Intermediate Level
+  |     |-- Theory explanation (patterns, techniques, optimizations)
+  |     |-- Code examples (Python, Java, C++)
+  |     |-- Practice problems (medium difficulty)
+  |-- Advanced Level
+  |     |-- Theory explanation (edge cases, competitive programming, interview patterns)
+  |     |-- Code examples (Python, Java, C++)
+  |     |-- Practice problems (hard difficulty)
+  |-- Time & Space Complexity table
 ```
 
-- The TheoryPage shows 3 tabs or accordion sections: "Beginner", "Intermediate", "Advanced"
-- Each level has its own explanation and code example appropriate to that difficulty
-- Practice problems are grouped by difficulty under the theory
+## Topics Getting Full Content (21 topics)
 
-**Files changed:**
-- `src/data/curriculum.ts` -- Add `theoryLevels` to the interface and populate for all 30 topics
-- `src/pages/TheoryPage.tsx` -- Add tabs for Beginner / Intermediate / Advanced; render level-specific content
+Each will get proper theory text, real code examples, and specific practice problems:
 
----
+| # | Topic | Beginner Focus | Intermediate Focus | Advanced Focus |
+|---|-------|---------------|-------------------|---------------|
+| 10 | 2D Arrays | Matrix creation, traversal | Rotation, spiral traversal | Search in sorted matrix |
+| 11 | Strings | String basics, comparison | Pattern matching, anagrams | KMP algorithm, Z-function |
+| 12 | Bit Manipulation | Binary representation, AND/OR/XOR | Set/clear/toggle bits | Power set, bit DP |
+| 13 | OOPs | Classes, objects, constructors | Inheritance, polymorphism | Design patterns, SOLID |
+| 14 | Recursion | Base case, factorial, fibonacci | Tower of Hanoi, subsets | Memoization, tree recursion |
+| 15 | Divide & Conquer | Binary search, merge sort concept | Merge sort, quick sort | Closest pair, matrix multiply |
+| 16 | Backtracking | Permutations, combinations | N-Queens, Sudoku solver | Word search, graph coloring |
+| 17 | Time & Space Complexity | Big O basics, counting operations | Amortized analysis, log n | Master theorem, space tradeoffs |
+| 18 | ArrayLists | Dynamic array basics, add/remove | Iterator, resizing | Custom implementation |
+| 19 | Linked Lists | Singly linked list, traversal | Doubly linked, reversal | Cycle detection, merge k lists |
+| 20 | Stacks | Push/pop, balanced parentheses | Infix to postfix, evaluation | Monotonic stack, largest rectangle |
+| 21 | Queues | Enqueue/dequeue, circular queue | Deque, priority queue basics | Sliding window max, BFS |
+| 22 | Greedy | Activity selection, coin change | Fractional knapsack, Huffman | Interval scheduling, job sequencing |
+| 23 | Binary Trees | Tree creation, traversals (DFS) | BFS, height, diameter | LCA, serialization, path sum |
+| 24 | BST | Insert, search, inorder | Delete, validation, floor/ceil | AVL rotation, Red-Black concept |
+| 25 | Heaps | Min/max heap, insert/extract | Heap sort, kth smallest | Median stream, merge k sorted |
+| 26 | Hashing | Hash map basics, frequency count | Collision handling, chaining | Open addressing, custom hash |
+| 27 | Tries | Insert, search prefix | Autocomplete, word dictionary | Compressed trie, XOR trie |
+| 28 | Graphs | Adjacency list, BFS/DFS | Cycle detection, topological sort | Dijkstra, Bellman-Ford, MST |
+| 29 | Dynamic Programming | Fibonacci, climbing stairs | 0/1 knapsack, LCS, LIS | Edit distance, matrix chain, bitmask DP |
+| 30 | Segment Trees | Build, point query | Range sum, range min query | Lazy propagation, range update |
 
-## 4. Remove All Locking Logic
+## Practice Problems Per Topic
 
-- `src/pages/CurriculumPage.tsx` -- Remove locked/unlocked status badges and locked styling; all topics show as accessible
-- `src/pages/TheoryPage.tsx` -- Remove the "Topic Locked" section and prerequisite warnings
-- `src/hooks/useTopicProgress.tsx` -- Simplify `getTopicStatus` to only return 'unlocked', 'in-progress', or 'completed' (never 'locked')
+Each topic will have 3-5 specific, well-described practice problems instead of generic ones:
+- 1-2 easy problems matching beginner theory
+- 1-2 medium problems matching intermediate theory
+- 1 hard problem matching advanced theory
 
----
+## Animation Enhancements for TheoryPage
+
+Add smooth, engaging transitions to the learning experience:
+
+1. **Staggered fade-in** -- Theory sections animate in one by one with a slight delay (like cards appearing)
+2. **Tab transition animation** -- Switching between Beginner/Intermediate/Advanced has a smooth slide/fade effect
+3. **Code block reveal** -- Code examples slide up with a subtle glow effect when the tab is selected
+4. **Progress indicator** -- A colored progress bar at the top of the theory section showing which level is active
+5. **Accordion smooth expand** -- Smoother open/close animations for the What/Why/Complexity sections
+6. **Hover glow on practice problems** -- Each problem card glows with the topic's accent color on hover
+
+## Files Modified
+
+| File | What Changes |
+|------|-------------|
+| `src/data/curriculum.ts` | Major rewrite of topics 10-30 with full theory, code examples, and real practice problems |
+| `src/pages/TheoryPage.tsx` | Add animation classes, staggered fade-in, tab transition effects, code reveal animations |
+| `src/index.css` | Add new animation keyframes for stagger-fade, code-reveal, tab-slide, and glow effects |
+| `tailwind.config.ts` | Register new animation utilities |
 
 ## Technical Details
 
-### Updated TopicContent Interface
-```typescript
-interface TheoryLevel {
-  title: string;
-  content: string;
-  codeExample: Record<Language, string>;
+### New CSS Animations
+
+```css
+/* Stagger fade-in for theory content */
+@keyframes stagger-fade {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-interface TopicContent {
-  id: string;
-  title: string;
-  icon: string;
-  color: string;
-  order: number;
-  prerequisites: string[]; // always empty now
-  nextTopics: string[];    // always empty now
-  estimatedHours: number;
-  definition: string;
-  analogy: string;
-  whyUseIt: string;
-  theoryLevels: {
-    beginner: TheoryLevel;
-    intermediate: TheoryLevel;
-    advanced: TheoryLevel;
-  };
-  timeComplexity: { operation: string; best: string; average: string; worst: string }[];
-  spaceComplexity: string;
-  codeExamples: Record<Language, string>;
-  problems: Problem[];
+/* Code block reveal */
+@keyframes code-reveal {
+  from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* Tab content slide */
+@keyframes tab-slide-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 ```
 
-### Auth Flow Change
-- `AppRoutes` always renders `<AppLayout><Routes>...</Routes></AppLayout>`
-- A new `<AuthDialog>` component wraps the existing auth form in a modal dialog
-- AppLayout header: if logged in shows avatar + logout; if not shows "Sign In" / "Register" buttons that open the dialog
-- Onboarding shows as a banner/prompt after first sign-in rather than a full-page redirect
+### TheoryPage Animation Approach
 
-### Files Modified (Summary)
-| File | Change |
-|------|--------|
-| `src/App.tsx` | Remove auth gate, always show routes |
-| `src/components/AppLayout.tsx` | Add auth buttons to header, auth dialog |
-| `src/components/AuthDialog.tsx` | New -- reusable auth modal |
-| `src/data/curriculum.ts` | Expand to 30 topics, add theoryLevels, remove prerequisites |
-| `src/pages/TheoryPage.tsx` | Add Beginner/Intermediate/Advanced tabs, remove lock UI |
-| `src/pages/CurriculumPage.tsx` | Remove lock styling, simplify status display |
-| `src/hooks/useTopicProgress.tsx` | Remove lock logic, guard for anonymous users |
-| `src/pages/Onboarding.tsx` | Show conditionally after sign-in instead of as gate |
+- Each section gets an animation delay based on its index: `animation-delay: ${index * 0.1}s`
+- Tab content uses `key={level}` to trigger re-mount animation on tab switch
+- Code blocks get a separate delayed animation for a "typewriter-like" reveal feel
+- Practice problem cards stagger in when the accordion opens
 
+### Curriculum Data Structure
+
+Topics 10-30 will be converted from the current `.map()` shorthand with placeholders to fully fleshed-out objects matching the same structure as topics 1-9, with:
+- Multi-paragraph theory content explaining concepts step by step
+- Real, working code examples in Python, Java, and C++
+- Specific practice problems with clear descriptions (e.g., "Rotate a matrix 90 degrees clockwise" instead of "2D Arrays Medium")
+- Accurate time/space complexity tables per operation
