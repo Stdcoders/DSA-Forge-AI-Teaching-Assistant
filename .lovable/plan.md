@@ -1,77 +1,142 @@
 
 
-# Restructure TheoryPage to Vertical Tree Layout
+# Plan: Split Theory into Level Pages with AI Quiz Generator
 
-## Current Problem
-The theory page uses **tabs** that show only one level at a time (Beginner/Intermediate/Advanced). You want all levels visible in a scrollable vertical layout where each level shows its own theory, code examples, and practice problems together.
+## Overview
 
-## New Layout Structure
+Instead of showing Beginner, Intermediate, and Advanced all on one page, each level becomes its own full-page view with navigation arrows. At the bottom of each level, an AI-powered quiz is dynamically generated based on that level's theory content.
+
+## New Page Flow
 
 ```text
-Topic Header (icon, title, status)
-|
-|-- What is it? (collapsible, open by default)
-|     |-- Definition text
-|     |-- Real-World Analogy box
-|
-|-- Why use it? (collapsible, open by default)
-|
-|-- Beginner Level (collapsible section, green accent)
-|     |-- Theory explanation
-|     |-- Code examples (Python / Java / C++ selector)
-|     |-- Practice problems (easy only)
-|
-|-- Intermediate Level (collapsible section, yellow accent)
-|     |-- Theory explanation
-|     |-- Code examples (Python / Java / C++ selector)
-|     |-- Practice problems (medium only)
-|
-|-- Advanced Level (collapsible section, red accent)
-|     |-- Theory explanation
-|     |-- Code examples (Python / Java / C++ selector)
-|     |-- Practice problems (hard only)
-|
-|-- Time & Space Complexity table
-|
-|-- Action buttons (Start Practice, Mark Complete, Back)
+/curriculum/arrays              -- Topic overview (What/Why) + starts at Beginner
+/curriculum/arrays/beginner     -- Beginner theory + code + problems + AI Quiz
+/curriculum/arrays/intermediate -- Intermediate theory + code + problems + AI Quiz
+/curriculum/arrays/advanced     -- Advanced theory + code + problems + AI Quiz + Complexity table
 ```
 
-## What Changes
+The user lands on the overview page first, then clicks "Start Learning" to enter the Beginner level. Each level page has:
 
-### `src/pages/TheoryPage.tsx`
-- **Remove** the Tabs component (no more tab switching)
-- **Replace** with three separate Accordion sections for Beginner, Intermediate, and Advanced
-- Each level section includes:
-  - Level header with colored dot (green/yellow/red)
-  - Theory content
-  - Language selector + code block (each level gets its own language selector)
-  - Practice problems filtered by difficulty (easy for beginner, medium for intermediate, hard for advanced)
-- **Remove** the single "Practice Problems" accordion at the bottom (problems are now distributed into their levels)
-- **Remove** the progress bar and activeLevel state (no longer needed since all levels are visible)
-- Keep all existing animations (stagger-fade, code-reveal, problem-card-glow)
+```text
+Level Page (e.g., Beginner)
+|
+|-- Level header with progress indicator (Step 1 of 3)
+|-- Theory explanation
+|-- Code examples (Python / Java / C++ selector)
+|-- Practice problems (filtered by difficulty)
+|-- AI Quiz Section (3-5 MCQ questions generated from the theory)
+|-- Navigation: <- Previous Level | Next Level ->
+```
 
-### Visual Design Per Level Section
-- Each level gets a colored left border accent: green for beginner, amber for intermediate, red for advanced
-- Level badge shows the difficulty label
-- Problems are filtered: easy problems under Beginner, medium under Intermediate, hard under Advanced
-- All three sections default to open so users can scroll through the full content
+## File Changes
 
-### No changes needed to:
-- `src/data/curriculum.ts` (data structure stays the same)
-- `src/index.css` (existing animations are reused)
-- `tailwind.config.ts` (no new utilities needed)
+### 1. New Route: `src/App.tsx`
+- Add route: `/curriculum/:topicId/:level` pointing to a new `TheoryLevelPage` component
+- Keep `/curriculum/:topicId` as the topic overview page
+
+### 2. Refactor: `src/pages/TheoryPage.tsx`
+- Remove the three LevelSection accordions
+- Keep only: Header, What is it?, Why use it?, and a "Start Learning" button that navigates to `/curriculum/{topicId}/beginner`
+- Add a level progress indicator showing Beginner / Intermediate / Advanced as clickable steps
+
+### 3. New Page: `src/pages/TheoryLevelPage.tsx`
+This is the main new component. It renders one level at a time:
+
+- **Header**: Level badge (green/amber/red), title, step indicator (1/3, 2/3, 3/3)
+- **Theory Content**: The level's theory text with whitespace formatting
+- **Code Examples**: Language selector + code block (same as current)
+- **Practice Problems**: Filtered by difficulty (easy/medium/hard)
+- **AI Quiz Section**: A "Generate Quiz" button that calls an edge function to create 3-5 MCQ questions based on the theory content. Shows questions with radio button options, a submit button, and score feedback.
+- **Navigation Footer**:
+  - Beginner: "Back to Overview" on left, "Next: Intermediate ->" on right
+  - Intermediate: "<- Previous: Beginner" on left, "Next: Advanced ->" on right  
+  - Advanced: "<- Previous: Intermediate" on left, "Complete Topic" on right (marks complete + shows complexity table)
+
+### 4. New Edge Function: `supabase/functions/generate-quiz/index.ts`
+- Receives: `{ topicTitle, level, theoryContent, language }` 
+- Uses Lovable AI (gemini-3-flash-preview) to generate 3-5 MCQ questions
+- Returns structured JSON via tool calling:
+  ```json
+  {
+    "questions": [
+      {
+        "question": "What is the time complexity of accessing an array element by index?",
+        "options": ["O(1)", "O(n)", "O(log n)", "O(n^2)"],
+        "correctIndex": 0,
+        "explanation": "Array access by index is O(1) because..."
+      }
+    ]
+  }
+  ```
+- Uses tool calling (not raw JSON) to ensure structured output
+- Handles 429/402 rate limit errors gracefully
+
+### 5. New Component: `src/components/LevelQuiz.tsx`
+- Takes `topicId`, `level`, `theoryContent` as props
+- "Generate Quiz" button triggers the edge function call
+- Displays questions as cards with radio button options
+- Submit button checks answers and shows score (e.g., "4/5 correct!")
+- Shows explanations for wrong answers after submission
+- "Regenerate Quiz" button to get fresh questions
+- Loading state with skeleton cards while quiz generates
+
+### 6. Styles: `src/index.css`
+- Add quiz-specific styles: correct/incorrect answer highlighting (green/red borders)
+- Navigation arrow hover effects
 
 ## Technical Details
 
-The key change is replacing lines 140-204 (the Tabs block) with three separate accordion items, one per level. Each accordion item will contain:
+### Quiz Generation Edge Function
 
-1. Theory text from `topic.theoryLevels[level].content`
-2. Its own language selector and code block from `topic.theoryLevels[level].codeExample`
-3. Filtered practice problems: `topic.problems.filter(p => p.difficulty === difficultyMap[level])`
+The edge function sends the theory content to the AI with a system prompt like:
+```
+You are a quiz generator for a DSA learning platform. Generate exactly {count} multiple-choice questions based on the provided theory content. Each question should test understanding of the concepts explained, not just memorization. Match the difficulty to the level (beginner = conceptual, intermediate = application, advanced = analysis/optimization).
+```
 
-The difficulty mapping:
-- beginner -> easy problems
-- intermediate -> medium problems  
-- advanced -> hard problems
+It uses tool calling to guarantee structured output:
+```typescript
+body.tools = [{
+  type: "function",
+  function: {
+    name: "generate_quiz",
+    parameters: {
+      type: "object",
+      properties: {
+        questions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              question: { type: "string" },
+              options: { type: "array", items: { type: "string" } },
+              correctIndex: { type: "integer" },
+              explanation: { type: "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}];
+body.tool_choice = { type: "function", function: { name: "generate_quiz" } };
+```
 
-The bottom "Practice Problems" and "Complexity" accordions will be restructured: complexity stays at the bottom, but practice problems are removed from the bottom since they now live inside each level.
+### Navigation Logic
+
+The level pages use URL params to determine the current level and calculate previous/next:
+```typescript
+const LEVELS = ['beginner', 'intermediate', 'advanced'];
+const currentIndex = LEVELS.indexOf(level);
+const prevLevel = currentIndex > 0 ? LEVELS[currentIndex - 1] : null;
+const nextLevel = currentIndex < 2 ? LEVELS[currentIndex + 1] : null;
+```
+
+### Level Progress Indicator
+
+A horizontal stepper at the top of each level page:
+```text
+[1 Beginner] ---- [2 Intermediate] ---- [3 Advanced]
+    (active)         (upcoming)            (upcoming)
+```
+Completed levels get a checkmark, current level is highlighted with the topic's accent color.
+
