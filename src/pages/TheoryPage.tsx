@@ -47,7 +47,7 @@ function LevelSection({
     <AccordionItem
       value={level}
       className={`rounded-xl border border-border overflow-hidden stagger-fade ${config.borderClass}`}
-      style={{ background: 'var(--gradient-card)', animationDelay: animDelay }}
+      style={{ background: 'var(--gradient-card)', animationDelay: String(animDelay) }}
     >
       <AccordionTrigger className="px-5 py-4 hover:no-underline">
         <div className="flex items-center gap-3">
