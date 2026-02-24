@@ -42,13 +42,16 @@ export interface TopicContent {
 }
 
 // Helper to make a minimal problem
-function mkProblem(id: string, title: string, difficulty: Difficulty, desc: string): Problem {
+function mkProblem(
+  id: string, title: string, difficulty: Difficulty, desc: string,
+  extras?: Partial<Pick<Problem, 'examples' | 'constraints' | 'testCases' | 'starterCode'>>
+): Problem {
   return {
     id, title, difficulty, description: desc,
-    examples: [{ input: 'See description', output: 'See description' }],
-    constraints: ['See description'],
-    testCases: [{ input: 'sample', expectedOutput: 'sample' }],
-    starterCode: {
+    examples: extras?.examples || [{ input: 'See description', output: 'See description' }],
+    constraints: extras?.constraints || ['See description'],
+    testCases: extras?.testCases || [{ input: 'sample', expectedOutput: 'sample' }],
+    starterCode: extras?.starterCode || {
       python: `# ${title}\n# Your solution here\npass`,
       java: `// ${title}\npublic class Solution {\n    // Your solution here\n}`,
       cpp: `// ${title}\n#include <bits/stdc++.h>\nusing namespace std;\n// Your solution here`,
@@ -179,8 +182,32 @@ int main() {
     spaceComplexity: 'N/A',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('flowchart-even-odd', 'Even or Odd', 'easy', 'Write a program that checks if a number is even or odd.'),
-      mkProblem('flowchart-largest-three', 'Largest of Three', 'easy', 'Find the largest of three numbers using if-else.'),
+      mkProblem('flowchart-even-odd', 'Even or Odd', 'easy', 'Write a program that checks if a number is even or odd.', {
+        examples: [
+          { input: 'n = 4', output: 'Even', explanation: '4 % 2 == 0, so it is even.' },
+          { input: 'n = 7', output: 'Odd', explanation: '7 % 2 == 1, so it is odd.' },
+        ],
+        constraints: ['1 <= n <= 10^9'],
+        testCases: [{ input: '4', expectedOutput: 'Even' }, { input: '7', expectedOutput: 'Odd' }],
+        starterCode: {
+          python: 'n = int(input())\n# Print "Even" or "Odd"',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Print "Even" or "Odd"\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Print "Even" or "Odd"\n    return 0;\n}',
+        },
+      }),
+      mkProblem('flowchart-largest-three', 'Largest of Three', 'easy', 'Find the largest of three numbers using if-else.', {
+        examples: [
+          { input: 'a = 3, b = 7, c = 5', output: '7', explanation: '7 is the largest among 3, 7, 5.' },
+          { input: 'a = 10, b = 10, c = 10', output: '10' },
+        ],
+        constraints: ['-10^9 <= a, b, c <= 10^9'],
+        testCases: [{ input: '3 7 5', expectedOutput: '7' }, { input: '10 10 10', expectedOutput: '10' }],
+        starterCode: {
+          python: 'a, b, c = map(int, input().split())\n# Print the largest of a, b, c',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int a = sc.nextInt(), b = sc.nextInt(), c = sc.nextInt();\n        // Print the largest\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int a, b, c;\n    cin >> a >> b >> c;\n    // Print the largest\n    return 0;\n}',
+        },
+      }),
     ],
   },
 
@@ -314,8 +341,31 @@ int main() {
     spaceComplexity: 'O(1) per variable',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('swap-two', 'Swap Two Variables', 'easy', 'Swap the values of two variables without using a third variable.'),
-      mkProblem('temperature-convert', 'Temperature Converter', 'easy', 'Convert Celsius to Fahrenheit and vice versa.'),
+      mkProblem('swap-two', 'Swap Two Variables', 'easy', 'Swap the values of two variables without using a third variable.', {
+        examples: [
+          { input: 'a = 5, b = 10', output: 'a = 10, b = 5', explanation: 'After swapping, a becomes 10 and b becomes 5.' },
+        ],
+        constraints: ['-10^9 <= a, b <= 10^9'],
+        testCases: [{ input: '5 10', expectedOutput: '10 5' }, { input: '-3 7', expectedOutput: '7 -3' }],
+        starterCode: {
+          python: 'a, b = map(int, input().split())\n# Swap without third variable and print "a b"',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int a = sc.nextInt(), b = sc.nextInt();\n        // Swap and print\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int a, b;\n    cin >> a >> b;\n    // Swap without temp and print\n    return 0;\n}',
+        },
+      }),
+      mkProblem('temperature-convert', 'Temperature Converter', 'easy', 'Given a temperature in Celsius, convert it to Fahrenheit. Formula: F = C × 9/5 + 32.', {
+        examples: [
+          { input: 'C = 0', output: '32.00', explanation: '0°C = 32°F' },
+          { input: 'C = 100', output: '212.00', explanation: '100°C = 212°F' },
+        ],
+        constraints: ['-273.15 <= C <= 10^6'],
+        testCases: [{ input: '0', expectedOutput: '32.00' }, { input: '100', expectedOutput: '212.00' }, { input: '37', expectedOutput: '98.60' }],
+        starterCode: {
+          python: 'c = float(input())\n# Print Fahrenheit with 2 decimal places',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        double c = new Scanner(System.in).nextDouble();\n        // Print Fahrenheit with 2 decimal places\n    }\n}',
+          cpp: '#include <iostream>\n#include <iomanip>\nusing namespace std;\nint main() {\n    double c;\n    cin >> c;\n    // Print Fahrenheit with 2 decimal places\n    return 0;\n}',
+        },
+      }),
     ],
   },
 
@@ -417,8 +467,32 @@ cout << (a << 1) << endl; // 10`,
     spaceComplexity: 'O(1)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('check-power-of-two', 'Check Power of Two', 'easy', 'Check if a given number is a power of 2 using bitwise operators.'),
-      mkProblem('xor-find-unique', 'Find Unique Number', 'medium', 'Given an array where every element appears twice except one, find the unique element using XOR.'),
+      mkProblem('check-power-of-two', 'Check Power of Two', 'easy', 'Check if a given number is a power of 2 using bitwise operators.', {
+        examples: [
+          { input: 'n = 16', output: 'true', explanation: '16 = 2^4' },
+          { input: 'n = 18', output: 'false' },
+        ],
+        constraints: ['1 <= n <= 2^31 - 1'],
+        testCases: [{ input: '16', expectedOutput: 'true' }, { input: '18', expectedOutput: 'false' }, { input: '1', expectedOutput: 'true' }],
+        starterCode: {
+          python: 'n = int(input())\n# Print "true" or "false"',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        int n = new Scanner(System.in).nextInt();\n        // Print "true" or "false"\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Print "true" or "false"\n    return 0;\n}',
+        },
+      }),
+      mkProblem('xor-find-unique', 'Find Unique Number', 'medium', 'Given an array where every element appears twice except one, find the unique element using XOR.', {
+        examples: [
+          { input: 'nums = [2, 3, 2, 4, 4]', output: '3', explanation: '2 and 4 appear twice, 3 appears once.' },
+          { input: 'nums = [1]', output: '1' },
+        ],
+        constraints: ['1 <= nums.length <= 3 × 10^4', 'Each element appears twice except one'],
+        testCases: [{ input: '5\n2 3 2 4 4', expectedOutput: '3' }, { input: '1\n1', expectedOutput: '1' }],
+        starterCode: {
+          python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print the unique element',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for (int i = 0; i < n; i++) nums[i] = sc.nextInt();\n        // Print the unique element\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Read array and print the unique element\n    return 0;\n}',
+        },
+      }),
     ],
   },
 
@@ -525,8 +599,34 @@ def process_order(order):
     spaceComplexity: 'O(1)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('leap-year', 'Leap Year Check', 'easy', 'Determine if a given year is a leap year.'),
-      mkProblem('triangle-type', 'Triangle Type', 'medium', 'Given three sides, determine if the triangle is equilateral, isosceles, or scalene.'),
+      mkProblem('leap-year', 'Leap Year Check', 'easy', 'Determine if a given year is a leap year. A year is leap if divisible by 4 but not 100, or divisible by 400.', {
+        examples: [
+          { input: 'year = 2024', output: 'true', explanation: '2024 is divisible by 4 but not by 100.' },
+          { input: 'year = 1900', output: 'false', explanation: '1900 is divisible by 100 but not by 400.' },
+          { input: 'year = 2000', output: 'true', explanation: '2000 is divisible by 400.' },
+        ],
+        constraints: ['1 <= year <= 10^5'],
+        testCases: [{ input: '2024', expectedOutput: 'true' }, { input: '1900', expectedOutput: 'false' }, { input: '2000', expectedOutput: 'true' }],
+        starterCode: {
+          python: 'year = int(input())\n# Print "true" or "false"',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        int year = new Scanner(System.in).nextInt();\n        // Print "true" or "false"\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int year;\n    cin >> year;\n    // Print "true" or "false"\n    return 0;\n}',
+        },
+      }),
+      mkProblem('triangle-type', 'Triangle Type', 'medium', 'Given three sides, determine if the triangle is equilateral, isosceles, or scalene. First check if a valid triangle can be formed.', {
+        examples: [
+          { input: 'a = 5, b = 5, c = 5', output: 'Equilateral' },
+          { input: 'a = 5, b = 5, c = 3', output: 'Isosceles' },
+          { input: 'a = 3, b = 4, c = 5', output: 'Scalene' },
+        ],
+        constraints: ['1 <= a, b, c <= 10^6'],
+        testCases: [{ input: '5 5 5', expectedOutput: 'Equilateral' }, { input: '5 5 3', expectedOutput: 'Isosceles' }, { input: '3 4 5', expectedOutput: 'Scalene' }],
+        starterCode: {
+          python: 'a, b, c = map(int, input().split())\n# Print "Equilateral", "Isosceles", or "Scalene"',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int a = sc.nextInt(), b = sc.nextInt(), c = sc.nextInt();\n        // Print triangle type\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int a, b, c;\n    cin >> a >> b >> c;\n    // Print triangle type\n    return 0;\n}',
+        },
+      }),
     ],
   },
 
@@ -655,9 +755,45 @@ public boolean hasPairSum(int[] arr, int target) {
     spaceComplexity: 'O(1) for simple loops',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('sum-digits', 'Sum of Digits', 'easy', 'Find the sum of digits of a given number.'),
-      mkProblem('reverse-number', 'Reverse a Number', 'easy', 'Reverse the digits of an integer.'),
-      mkProblem('prime-check', 'Prime Number Check', 'medium', 'Check if a given number is prime.'),
+      mkProblem('sum-digits', 'Sum of Digits', 'easy', 'Find the sum of digits of a given number.', {
+        examples: [
+          { input: 'n = 1234', output: '10', explanation: '1 + 2 + 3 + 4 = 10' },
+          { input: 'n = 9', output: '9' },
+        ],
+        constraints: ['0 <= n <= 10^9'],
+        testCases: [{ input: '1234', expectedOutput: '10' }, { input: '9', expectedOutput: '9' }, { input: '0', expectedOutput: '0' }],
+        starterCode: {
+          python: 'n = int(input())\n# Print sum of digits',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        int n = new Scanner(System.in).nextInt();\n        // Print sum of digits\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Print sum of digits\n    return 0;\n}',
+        },
+      }),
+      mkProblem('reverse-number', 'Reverse a Number', 'easy', 'Reverse the digits of an integer. Negative sign should be preserved.', {
+        examples: [
+          { input: 'n = 1234', output: '4321' },
+          { input: 'n = -567', output: '-765' },
+        ],
+        constraints: ['-2^31 <= n <= 2^31 - 1'],
+        testCases: [{ input: '1234', expectedOutput: '4321' }, { input: '-567', expectedOutput: '-765' }, { input: '100', expectedOutput: '1' }],
+        starterCode: {
+          python: 'n = int(input())\n# Print the reversed number',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        int n = new Scanner(System.in).nextInt();\n        // Print the reversed number\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Print the reversed number\n    return 0;\n}',
+        },
+      }),
+      mkProblem('prime-check', 'Prime Number Check', 'medium', 'Check if a given number is prime. A prime number has exactly two divisors: 1 and itself.', {
+        examples: [
+          { input: 'n = 7', output: 'true', explanation: '7 is only divisible by 1 and 7.' },
+          { input: 'n = 4', output: 'false', explanation: '4 is divisible by 2.' },
+        ],
+        constraints: ['1 <= n <= 10^9'],
+        testCases: [{ input: '7', expectedOutput: 'true' }, { input: '4', expectedOutput: 'false' }, { input: '1', expectedOutput: 'false' }, { input: '2', expectedOutput: 'true' }],
+        starterCode: {
+          python: 'n = int(input())\n# Print "true" if prime, "false" otherwise',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        int n = new Scanner(System.in).nextInt();\n        // Print "true" or "false"\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Print "true" or "false"\n    return 0;\n}',
+        },
+      }),
     ],
   },
 
@@ -773,8 +909,30 @@ for (int i = n-1; i >= 1; i--) {
     spaceComplexity: 'O(1)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('inverted-triangle', 'Inverted Triangle', 'easy', 'Print an inverted right triangle of stars.'),
-      mkProblem('hollow-rectangle', 'Hollow Rectangle', 'medium', 'Print a hollow rectangle of stars.'),
+      mkProblem('inverted-triangle', 'Inverted Triangle', 'easy', 'Print an inverted right triangle of n rows. Row 1 has n stars, row 2 has n-1, etc.', {
+        examples: [
+          { input: 'n = 4', output: '* * * *\n* * *\n* *\n*' },
+        ],
+        constraints: ['1 <= n <= 100'],
+        testCases: [{ input: '4', expectedOutput: '* * * *\n* * *\n* *\n*' }, { input: '1', expectedOutput: '*' }],
+        starterCode: {
+          python: 'n = int(input())\n# Print inverted triangle',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        int n = new Scanner(System.in).nextInt();\n        // Print inverted triangle\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Print inverted triangle\n    return 0;\n}',
+        },
+      }),
+      mkProblem('hollow-rectangle', 'Hollow Rectangle', 'medium', 'Print a hollow rectangle of stars with r rows and c columns. Only the border should have stars.', {
+        examples: [
+          { input: 'r = 4, c = 5', output: '* * * * *\n*       *\n*       *\n* * * * *' },
+        ],
+        constraints: ['2 <= r, c <= 100'],
+        testCases: [{ input: '4 5', expectedOutput: '* * * * *\n*       *\n*       *\n* * * * *' }],
+        starterCode: {
+          python: 'r, c = map(int, input().split())\n# Print hollow rectangle',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int r = sc.nextInt(), c = sc.nextInt();\n        // Print hollow rectangle\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int r, c;\n    cin >> r >> c;\n    // Print hollow rectangle\n    return 0;\n}',
+        },
+      }),
     ],
   },
 
@@ -929,8 +1087,32 @@ cout << counter(); // 2`,
     spaceComplexity: 'O(1) per call + stack frame',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('factorial-func', 'Factorial Function', 'easy', 'Write a function that returns the factorial of n.'),
-      mkProblem('palindrome-check', 'Palindrome Check', 'easy', 'Write a function to check if a string is a palindrome.'),
+      mkProblem('factorial-func', 'Factorial Function', 'easy', 'Write a function that returns the factorial of n. n! = n × (n-1) × ... × 1.', {
+        examples: [
+          { input: 'n = 5', output: '120', explanation: '5! = 5 × 4 × 3 × 2 × 1 = 120' },
+          { input: 'n = 0', output: '1', explanation: '0! = 1 by definition.' },
+        ],
+        constraints: ['0 <= n <= 20'],
+        testCases: [{ input: '5', expectedOutput: '120' }, { input: '0', expectedOutput: '1' }, { input: '10', expectedOutput: '3628800' }],
+        starterCode: {
+          python: 'n = int(input())\n\ndef factorial(n):\n    # Return n!\n    pass\n\nprint(factorial(n))',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    static long factorial(int n) {\n        // Return n!\n        return 0;\n    }\n    public static void main(String[] args) {\n        int n = new Scanner(System.in).nextInt();\n        System.out.println(factorial(n));\n    }\n}',
+          cpp: '#include <iostream>\nusing namespace std;\nlong long factorial(int n) {\n    // Return n!\n    return 0;\n}\nint main() {\n    int n;\n    cin >> n;\n    cout << factorial(n);\n    return 0;\n}',
+        },
+      }),
+      mkProblem('palindrome-check', 'Palindrome Check', 'easy', 'Write a function to check if a string is a palindrome (reads the same forwards and backwards).', {
+        examples: [
+          { input: 's = "racecar"', output: 'true' },
+          { input: 's = "hello"', output: 'false' },
+        ],
+        constraints: ['1 <= s.length <= 10^5', 'String contains only lowercase letters'],
+        testCases: [{ input: 'racecar', expectedOutput: 'true' }, { input: 'hello', expectedOutput: 'false' }, { input: 'a', expectedOutput: 'true' }],
+        starterCode: {
+          python: 's = input()\n# Print "true" or "false"',
+          java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        String s = new Scanner(System.in).nextLine();\n        // Print "true" or "false"\n    }\n}',
+          cpp: '#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string s;\n    cin >> s;\n    // Print "true" or "false"\n    return 0;\n}',
+        },
+      }),
     ],
   },
 
@@ -1059,9 +1241,45 @@ print(max_subarray_sum([2, 1, 5, 1, 3, 2], 3))  # 9`,
     spaceComplexity: 'O(n)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('two-sum', 'Two Sum', 'easy', 'Given an array and target, return indices of two numbers that add up to target.'),
-      mkProblem('max-subarray', 'Maximum Subarray', 'medium', 'Find the contiguous subarray with the largest sum (Kadane\'s Algorithm).'),
-      mkProblem('rotate-array', 'Rotate Array', 'hard', 'Rotate array right by k steps in-place with O(1) extra space.'),
+      mkProblem('two-sum', 'Two Sum', 'easy', 'Given an array of integers and a target, return indices of two numbers that add up to target.', {
+        examples: [
+          { input: 'nums = [2,7,11,15], target = 9', output: '0 1', explanation: 'nums[0] + nums[1] = 2 + 7 = 9' },
+          { input: 'nums = [3,2,4], target = 6', output: '1 2' },
+        ],
+        constraints: ['2 <= nums.length <= 10^4', '-10^9 <= nums[i] <= 10^9', 'Exactly one valid answer exists'],
+        testCases: [{ input: '4\n2 7 11 15\n9', expectedOutput: '0 1' }, { input: '3\n3 2 4\n6', expectedOutput: '1 2' }],
+        starterCode: {
+          python: 'n = int(input())\nnums = list(map(int, input().split()))\ntarget = int(input())\n# Print the two indices space-separated',
+          java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for (int i = 0; i < n; i++) nums[i] = sc.nextInt();\n        int target = sc.nextInt();\n        // Print the two indices\n    }\n}',
+          cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    vector<int> nums(n);\n    for (int i = 0; i < n; i++) cin >> nums[i];\n    int target;\n    cin >> target;\n    // Print the two indices\n    return 0;\n}',
+        },
+      }),
+      mkProblem('max-subarray', 'Maximum Subarray', 'medium', 'Find the contiguous subarray with the largest sum (Kadane\'s Algorithm).', {
+        examples: [
+          { input: 'nums = [-2,1,-3,4,-1,2,1,-5,4]', output: '6', explanation: 'Subarray [4,-1,2,1] has sum 6.' },
+          { input: 'nums = [1]', output: '1' },
+        ],
+        constraints: ['1 <= nums.length <= 10^5', '-10^4 <= nums[i] <= 10^4'],
+        testCases: [{ input: '9\n-2 1 -3 4 -1 2 1 -5 4', expectedOutput: '6' }, { input: '1\n1', expectedOutput: '1' }, { input: '5\n-1 -2 -3 -4 -5', expectedOutput: '-1' }],
+        starterCode: {
+          python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print the maximum subarray sum',
+          java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for (int i = 0; i < n; i++) nums[i] = sc.nextInt();\n        // Print the maximum subarray sum\n    }\n}',
+          cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    vector<int> nums(n);\n    for (int i = 0; i < n; i++) cin >> nums[i];\n    // Print the maximum subarray sum\n    return 0;\n}',
+        },
+      }),
+      mkProblem('rotate-array', 'Rotate Array', 'hard', 'Rotate array right by k steps in-place with O(1) extra space.', {
+        examples: [
+          { input: 'nums = [1,2,3,4,5,6,7], k = 3', output: '5 6 7 1 2 3 4', explanation: 'Rotate right 3 times.' },
+          { input: 'nums = [-1,-100,3,99], k = 2', output: '3 99 -1 -100' },
+        ],
+        constraints: ['1 <= nums.length <= 10^5', '-2^31 <= nums[i] <= 2^31 - 1', '0 <= k <= 10^5'],
+        testCases: [{ input: '7\n1 2 3 4 5 6 7\n3', expectedOutput: '5 6 7 1 2 3 4' }, { input: '4\n-1 -100 3 99\n2', expectedOutput: '3 99 -1 -100' }],
+        starterCode: {
+          python: 'n = int(input())\nnums = list(map(int, input().split()))\nk = int(input())\n# Rotate and print space-separated',
+          java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for (int i = 0; i < n; i++) nums[i] = sc.nextInt();\n        int k = sc.nextInt();\n        // Rotate and print\n    }\n}',
+          cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    vector<int> nums(n);\n    for (int i = 0; i < n; i++) cin >> nums[i];\n    int k;\n    cin >> k;\n    // Rotate and print\n    return 0;\n}',
+        },
+      }),
     ],
   },
 
@@ -1189,9 +1407,36 @@ print(quick_sort([3, 6, 8, 10, 1, 2, 1]))`,
     spaceComplexity: 'O(n) for Merge Sort, O(log n) for Quick Sort',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('sort-array', 'Sort an Array', 'easy', 'Sort an array of integers in ascending order.'),
-      mkProblem('merge-sorted-arrays', 'Merge Two Sorted Arrays', 'medium', 'Merge two sorted arrays into one sorted array.'),
-      mkProblem('kth-largest', 'Kth Largest Element', 'hard', 'Find the kth largest element using quickselect.'),
+      mkProblem('sort-array', 'Sort an Array', 'easy', 'Sort an array of integers in ascending order using any sorting algorithm.', {
+        examples: [{ input: 'nums = [5,2,3,1]', output: '1 2 3 5' }, { input: 'nums = [5,1,1,2,0,0]', output: '0 0 1 1 2 5' }],
+        constraints: ['1 <= nums.length <= 5 × 10^4', '-5 × 10^4 <= nums[i] <= 5 × 10^4'],
+        testCases: [{ input: '4\n5 2 3 1', expectedOutput: '1 2 3 5' }, { input: '6\n5 1 1 2 0 0', expectedOutput: '0 0 1 1 2 5' }],
+        starterCode: {
+          python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Sort and print space-separated',
+          java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for (int i = 0; i < n; i++) nums[i] = sc.nextInt();\n        // Sort and print\n    }\n}',
+          cpp: '#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    vector<int> nums(n);\n    for (int i = 0; i < n; i++) cin >> nums[i];\n    // Sort and print\n    return 0;\n}',
+        },
+      }),
+      mkProblem('merge-sorted-arrays', 'Merge Two Sorted Arrays', 'medium', 'Merge two sorted arrays into one sorted array in O(m+n) time.', {
+        examples: [{ input: 'a = [1,3,5], b = [2,4,6]', output: '1 2 3 4 5 6' }],
+        constraints: ['0 <= a.length, b.length <= 10^4'],
+        testCases: [{ input: '3\n1 3 5\n3\n2 4 6', expectedOutput: '1 2 3 4 5 6' }, { input: '0\n\n3\n1 2 3', expectedOutput: '1 2 3' }],
+        starterCode: {
+          python: 'm = int(input())\na = list(map(int, input().split())) if m else []\nn = int(input())\nb = list(map(int, input().split())) if n else []\n# Merge and print',
+          java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Read two sorted arrays and merge\n    }\n}',
+          cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Read two sorted arrays and merge\n    return 0;\n}',
+        },
+      }),
+      mkProblem('kth-largest', 'Kth Largest Element', 'hard', 'Find the kth largest element in an unsorted array. Expected O(n) average using quickselect.', {
+        examples: [{ input: 'nums = [3,2,1,5,6,4], k = 2', output: '5', explanation: 'Sorted: [6,5,4,3,2,1], 2nd largest is 5.' }],
+        constraints: ['1 <= k <= nums.length <= 10^5', '-10^4 <= nums[i] <= 10^4'],
+        testCases: [{ input: '6\n3 2 1 5 6 4\n2', expectedOutput: '5' }, { input: '9\n3 2 3 1 2 4 5 5 6\n4', expectedOutput: '4' }],
+        starterCode: {
+          python: 'n = int(input())\nnums = list(map(int, input().split()))\nk = int(input())\n# Print the kth largest element',
+          java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for (int i = 0; i < n; i++) nums[i] = sc.nextInt();\n        int k = sc.nextInt();\n        // Print kth largest\n    }\n}',
+          cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    vector<int> nums(n);\n    for (int i = 0; i < n; i++) cin >> nums[i];\n    int k;\n    cin >> k;\n    // Print kth largest\n    return 0;\n}',
+        },
+      }),
     ],
   },
 
@@ -1402,10 +1647,49 @@ def mat_mult(A, B):
     spaceComplexity: 'O(m×n)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('matrix-transpose', 'Transpose Matrix', 'easy', 'Given an m×n matrix, return its transpose.'),
-      mkProblem('spiral-matrix', 'Spiral Order Traversal', 'medium', 'Return all elements of the matrix in spiral order.'),
-      mkProblem('rotate-image', 'Rotate Image 90°', 'medium', 'Rotate an n×n matrix 90° clockwise in-place.'),
-      mkProblem('search-sorted-matrix', 'Search 2D Matrix', 'hard', 'Search for a target in a row-column sorted matrix in O(m+n).'),
+      mkProblem('matrix-transpose', 'Transpose Matrix', 'easy', 'Given an m×n matrix, return its transpose (rows become columns).', {
+        examples: [{ input: 'matrix = [[1,2,3],[4,5,6]]', output: '[[1,4],[2,5],[3,6]]' }],
+        constraints: ['1 <= m, n <= 1000', '-10^9 <= matrix[i][j] <= 10^9'],
+        testCases: [{ input: '2 3\n1 2 3\n4 5 6', expectedOutput: '1 4\n2 5\n3 6' }],
+        starterCode: {
+          python: 'r, c = map(int, input().split())\nmatrix = [list(map(int, input().split())) for _ in range(r)]\n# Print the transpose',
+          java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int r = sc.nextInt(), c = sc.nextInt();\n        int[][] matrix = new int[r][c];\n        for (int i = 0; i < r; i++) for (int j = 0; j < c; j++) matrix[i][j] = sc.nextInt();\n        // Print transpose\n    }\n}',
+          cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int r, c;\n    cin >> r >> c;\n    vector<vector<int>> matrix(r, vector<int>(c));\n    for (int i = 0; i < r; i++) for (int j = 0; j < c; j++) cin >> matrix[i][j];\n    // Print transpose\n    return 0;\n}',
+        },
+      }),
+      mkProblem('spiral-matrix', 'Spiral Order Traversal', 'medium', 'Return all elements of the matrix in spiral order (right→down→left→up).', {
+        examples: [{ input: 'matrix = [[1,2,3],[4,5,6],[7,8,9]]', output: '1 2 3 6 9 8 7 4 5' }],
+        constraints: ['1 <= m, n <= 10', '-100 <= matrix[i][j] <= 100'],
+        testCases: [{ input: '3 3\n1 2 3\n4 5 6\n7 8 9', expectedOutput: '1 2 3 6 9 8 7 4 5' }],
+        starterCode: {
+          python: 'r, c = map(int, input().split())\nmatrix = [list(map(int, input().split())) for _ in range(r)]\n# Print spiral order space-separated',
+          java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Read matrix and print spiral order\n    }\n}',
+          cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Read matrix and print spiral order\n    return 0;\n}',
+        },
+      }),
+      mkProblem('rotate-image', 'Rotate Image 90°', 'medium', 'Rotate an n×n matrix 90° clockwise in-place. Do not allocate another matrix.', {
+        examples: [{ input: 'matrix = [[1,2,3],[4,5,6],[7,8,9]]', output: '7 4 1\n8 5 2\n9 6 3' }],
+        constraints: ['1 <= n <= 20', '-1000 <= matrix[i][j] <= 1000'],
+        testCases: [{ input: '3\n1 2 3\n4 5 6\n7 8 9', expectedOutput: '7 4 1\n8 5 2\n9 6 3' }],
+        starterCode: {
+          python: 'n = int(input())\nmatrix = [list(map(int, input().split())) for _ in range(n)]\n# Rotate in-place and print',
+          java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Read n×n matrix, rotate 90° clockwise, print\n    }\n}',
+          cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Read n×n matrix, rotate 90° clockwise, print\n    return 0;\n}',
+        },
+      }),
+      mkProblem('search-sorted-matrix', 'Search 2D Matrix', 'hard', 'Search for a target in a row-column sorted matrix in O(m+n). Each row and column is sorted in ascending order.', {
+        examples: [
+          { input: 'matrix = [[1,4,7],[2,5,8],[3,6,9]], target = 5', output: 'true' },
+          { input: 'matrix = [[1,4,7],[2,5,8],[3,6,9]], target = 10', output: 'false' },
+        ],
+        constraints: ['1 <= m, n <= 300', '-10^9 <= matrix[i][j] <= 10^9'],
+        testCases: [{ input: '3 3\n1 4 7\n2 5 8\n3 6 9\n5', expectedOutput: 'true' }, { input: '3 3\n1 4 7\n2 5 8\n3 6 9\n10', expectedOutput: 'false' }],
+        starterCode: {
+          python: 'r, c = map(int, input().split())\nmatrix = [list(map(int, input().split())) for _ in range(r)]\ntarget = int(input())\n# Print "true" or "false"',
+          java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Read matrix and target, print "true" or "false"\n    }\n}',
+          cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Read matrix and target, print "true" or "false"\n    return 0;\n}',
+        },
+      }),
     ],
   },
 
@@ -1642,11 +1926,36 @@ public List<Integer> kmpSearch(String text, String pattern) {
     spaceComplexity: 'O(n)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('reverse-string', 'Reverse String', 'easy', 'Reverse a string in-place.'),
-      mkProblem('valid-anagram', 'Valid Anagram', 'easy', 'Check if two strings are anagrams of each other.'),
-      mkProblem('longest-unique-substring', 'Longest Substring Without Repeating Characters', 'medium', 'Find the length of the longest substring without repeating characters.'),
-      mkProblem('group-anagrams', 'Group Anagrams', 'medium', 'Group an array of strings into anagram groups.'),
-      mkProblem('kmp-pattern-match', 'Pattern Matching (KMP)', 'hard', 'Implement KMP algorithm to find all occurrences of a pattern in a text.'),
+      mkProblem('reverse-string', 'Reverse String', 'easy', 'Reverse a string in-place.', {
+        examples: [{ input: 's = "hello"', output: 'olleh' }],
+        constraints: ['1 <= s.length <= 10^5'],
+        testCases: [{ input: 'hello', expectedOutput: 'olleh' }, { input: 'ab', expectedOutput: 'ba' }],
+        starterCode: { python: 's = input()\n# Print the reversed string', java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        String s = new Scanner(System.in).nextLine();\n        // Print reversed\n    }\n}', cpp: '#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string s;\n    cin >> s;\n    // Print reversed\n    return 0;\n}' },
+      }),
+      mkProblem('valid-anagram', 'Valid Anagram', 'easy', 'Check if two strings are anagrams of each other (contain the same characters with the same frequencies).', {
+        examples: [{ input: 's = "anagram", t = "nagaram"', output: 'true' }, { input: 's = "rat", t = "car"', output: 'false' }],
+        constraints: ['1 <= s.length, t.length <= 5 × 10^4', 'Strings contain only lowercase English letters'],
+        testCases: [{ input: 'anagram\nnagaram', expectedOutput: 'true' }, { input: 'rat\ncar', expectedOutput: 'false' }],
+        starterCode: { python: 's = input()\nt = input()\n# Print "true" or "false"', java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.nextLine(), t = sc.nextLine();\n        // Print "true" or "false"\n    }\n}', cpp: '#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string s, t;\n    cin >> s >> t;\n    // Print "true" or "false"\n    return 0;\n}' },
+      }),
+      mkProblem('longest-unique-substring', 'Longest Substring Without Repeating Characters', 'medium', 'Find the length of the longest substring without repeating characters.', {
+        examples: [{ input: 's = "abcabcbb"', output: '3', explanation: 'The answer is "abc", length 3.' }, { input: 's = "bbbbb"', output: '1' }],
+        constraints: ['0 <= s.length <= 5 × 10^4', 'String contains English letters, digits, symbols'],
+        testCases: [{ input: 'abcabcbb', expectedOutput: '3' }, { input: 'bbbbb', expectedOutput: '1' }, { input: 'pwwkew', expectedOutput: '3' }],
+        starterCode: { python: 's = input()\n# Print the length', java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        String s = new Scanner(System.in).nextLine();\n        // Print the length\n    }\n}', cpp: '#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string s;\n    cin >> s;\n    // Print the length\n    return 0;\n}' },
+      }),
+      mkProblem('group-anagrams', 'Group Anagrams', 'medium', 'Group an array of strings into anagram groups. Strings that are anagrams go together.', {
+        examples: [{ input: 'strs = ["eat","tea","tan","ate","nat","bat"]', output: '[["eat","tea","ate"],["tan","nat"],["bat"]]' }],
+        constraints: ['1 <= strs.length <= 10^4', '0 <= strs[i].length <= 100'],
+        testCases: [{ input: '6\neat tea tan ate nat bat', expectedOutput: 'eat tea ate\ntan nat\nbat' }],
+        starterCode: { python: 'n = int(input())\nstrs = input().split()\n# Print each group on a line', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Read strings and group anagrams\n    }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\nint main() {\n    // Read strings and group anagrams\n    return 0;\n}' },
+      }),
+      mkProblem('kmp-pattern-match', 'Pattern Matching (KMP)', 'hard', 'Implement KMP algorithm to find all occurrences of a pattern in a text. Print starting indices.', {
+        examples: [{ input: 'text = "aabaabaa", pattern = "aab"', output: '0 3', explanation: 'Pattern "aab" found at indices 0 and 3.' }],
+        constraints: ['1 <= text.length <= 10^5', '1 <= pattern.length <= text.length'],
+        testCases: [{ input: 'aabaabaa\naab', expectedOutput: '0 3' }, { input: 'abcdef\nxyz', expectedOutput: '-1' }],
+        starterCode: { python: 'text = input()\npattern = input()\n# Print indices or -1 if not found', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String text = sc.nextLine(), pattern = sc.nextLine();\n        // Print indices or -1\n    }\n}', cpp: '#include <iostream>\n#include <string>\n#include <vector>\nusing namespace std;\nint main() {\n    string text, pattern;\n    cin >> text >> pattern;\n    // Print indices or -1\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -1829,10 +2138,30 @@ public List<List<Integer>> subsets(int[] nums) {
     spaceComplexity: 'O(1) for basic ops, O(2^n) for subsets',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('count-set-bits', 'Count Set Bits', 'easy', 'Count the number of 1-bits in a number\'s binary representation.'),
-      mkProblem('single-number', 'Single Number', 'easy', 'Find the element that appears only once when all others appear twice.'),
-      mkProblem('power-set-bits', 'Generate Power Set', 'medium', 'Generate all subsets of a set using bitmask.'),
-      mkProblem('two-non-repeating', 'Two Non-Repeating Elements', 'hard', 'Find two elements that appear once when all others appear twice.'),
+      mkProblem('count-set-bits', 'Count Set Bits', 'easy', 'Count the number of 1-bits in a number\'s binary representation.', {
+        examples: [{ input: 'n = 13', output: '3', explanation: '13 = 1101 in binary, three 1-bits.' }],
+        constraints: ['0 <= n <= 2^31 - 1'],
+        testCases: [{ input: '13', expectedOutput: '3' }, { input: '0', expectedOutput: '0' }, { input: '255', expectedOutput: '8' }],
+        starterCode: { python: 'n = int(input())\n# Print the count of set bits', java: 'import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        int n = new Scanner(System.in).nextInt();\n        // Print count of 1-bits\n    }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Print count of 1-bits\n    return 0;\n}' },
+      }),
+      mkProblem('single-number', 'Single Number', 'easy', 'Find the element that appears only once when all others appear twice.', {
+        examples: [{ input: 'nums = [4,1,2,1,2]', output: '4' }],
+        constraints: ['1 <= nums.length <= 3 × 10^4', 'Each element appears twice except one'],
+        testCases: [{ input: '5\n4 1 2 1 2', expectedOutput: '4' }, { input: '3\n2 2 1', expectedOutput: '1' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print the single number', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for (int i = 0; i < n; i++) nums[i] = sc.nextInt();\n        // Print single number\n    }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Read array, print single number\n    return 0;\n}' },
+      }),
+      mkProblem('power-set-bits', 'Generate Power Set', 'medium', 'Generate all subsets of a set using bitmask. Print each subset on a line.', {
+        examples: [{ input: 'nums = [1,2,3]', output: '[]\n[1]\n[2]\n[1,2]\n[3]\n[1,3]\n[2,3]\n[1,2,3]' }],
+        constraints: ['1 <= nums.length <= 10', '-10 <= nums[i] <= 10', 'All elements are unique'],
+        testCases: [{ input: '3\n1 2 3', expectedOutput: '\n1\n2\n1 2\n3\n1 3\n2 3\n1 2 3' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print all subsets, one per line', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Read array, print all subsets\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Read array, print all subsets\n    return 0;\n}' },
+      }),
+      mkProblem('two-non-repeating', 'Two Non-Repeating Elements', 'hard', 'Find two elements that appear once when all others appear twice. Use XOR and bit manipulation.', {
+        examples: [{ input: 'nums = [1,2,3,2,1,4]', output: '3 4', explanation: '3 and 4 appear once.' }],
+        constraints: ['2 <= nums.length <= 3 × 10^4', 'Exactly two elements appear once'],
+        testCases: [{ input: '6\n1 2 3 2 1 4', expectedOutput: '3 4' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print two unique numbers in ascending order', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Print two unique numbers\n    }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    // Print two unique numbers\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -2066,9 +2395,24 @@ public:
     spaceComplexity: 'O(1) per object + attributes',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('design-class', 'Design a Student Class', 'easy', 'Create a Student class with name, marks, and a method to compute grade.'),
-      mkProblem('inheritance-shape', 'Shape Hierarchy', 'medium', 'Design a Shape class hierarchy with Circle, Rectangle using inheritance.'),
-      mkProblem('design-pattern', 'Implement Singleton', 'hard', 'Implement the Singleton pattern ensuring thread safety.'),
+      mkProblem('design-class', 'Design a Student Class', 'easy', 'Create a Student class with name, marks array, and a method to compute the average grade.', {
+        examples: [{ input: 'name = "Alice", marks = [85, 90, 78]', output: 'Alice: 84.33', explanation: 'Average = (85+90+78)/3 = 84.33' }],
+        constraints: ['1 <= marks.length <= 10', '0 <= marks[i] <= 100'],
+        testCases: [{ input: 'Alice\n3\n85 90 78', expectedOutput: '84.33' }],
+        starterCode: { python: 'name = input()\nn = int(input())\nmarks = list(map(int, input().split()))\n# Create Student class, compute and print average (2 decimal places)', java: 'import java.util.*;\npublic class Solution {\n    // Define Student class and compute average\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Read and print average\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\n// Define Student class\nint main() {\n    // Read and print average\n    return 0;\n}' },
+      }),
+      mkProblem('inheritance-shape', 'Shape Hierarchy', 'medium', 'Design a Shape class with area() method. Create Circle and Rectangle subclasses. Compute and print areas.', {
+        examples: [{ input: 'Circle r=5', output: '78.54', explanation: 'π × 5² ≈ 78.54' }],
+        constraints: ['0 < dimensions <= 1000'],
+        testCases: [{ input: 'circle 5', expectedOutput: '78.54' }, { input: 'rectangle 4 6', expectedOutput: '24.00' }],
+        starterCode: { python: 'import math\nline = input().split()\n# Parse shape type and dimensions, print area (2 decimal places)', java: 'import java.util.*;\npublic class Solution {\n    // Define Shape hierarchy\n    public static void main(String[] args) {\n        // Parse and compute area\n    }\n}', cpp: '#include <iostream>\n#include <cmath>\nusing namespace std;\nint main() {\n    // Parse shape and compute area\n    return 0;\n}' },
+      }),
+      mkProblem('design-pattern', 'Implement Singleton', 'hard', 'Implement the Singleton pattern — only one instance should ever be created. Print the instance count.', {
+        examples: [{ input: '3 getInstance calls', output: '1', explanation: 'Only one instance exists regardless of calls.' }],
+        constraints: ['1 <= calls <= 100'],
+        testCases: [{ input: '3', expectedOutput: '1' }],
+        starterCode: { python: 'n = int(input())\n# Implement Singleton, create n instances, print unique count', java: 'import java.util.*;\npublic class Solution {\n    // Implement Singleton\n    public static void main(String[] args) {\n        // Create instances and verify singleton\n    }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    // Implement and verify singleton\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -2235,10 +2579,30 @@ long long fib(int n) {
     spaceComplexity: 'O(n) call stack',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('power-function', 'Power Function', 'easy', 'Compute x^n recursively in O(log n).'),
-      mkProblem('tower-of-hanoi', 'Tower of Hanoi', 'medium', 'Print all moves to solve Tower of Hanoi for n disks.'),
-      mkProblem('generate-subsets', 'Generate All Subsets', 'medium', 'Generate all subsets of a given set using recursion.'),
-      mkProblem('string-permutations', 'String Permutations', 'hard', 'Generate all permutations of a string.'),
+      mkProblem('power-function', 'Power Function', 'easy', 'Compute x^n recursively in O(log n) using fast exponentiation.', {
+        examples: [{ input: 'x = 2, n = 10', output: '1024' }, { input: 'x = 3, n = 5', output: '243' }],
+        constraints: ['-100 <= x <= 100', '0 <= n <= 30'],
+        testCases: [{ input: '2 10', expectedOutput: '1024' }, { input: '3 5', expectedOutput: '243' }],
+        starterCode: { python: 'x, n = map(int, input().split())\n# Print x^n', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int x = sc.nextInt(), n = sc.nextInt();\n        // Print x^n\n    }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int x, n;\n    cin >> x >> n;\n    // Print x^n\n    return 0;\n}' },
+      }),
+      mkProblem('tower-of-hanoi', 'Tower of Hanoi', 'medium', 'Print all moves to solve Tower of Hanoi for n disks. Move from A to C using B as auxiliary.', {
+        examples: [{ input: 'n = 2', output: 'Move disk 1 from A to B\nMove disk 2 from A to C\nMove disk 1 from B to C' }],
+        constraints: ['1 <= n <= 15'],
+        testCases: [{ input: '2', expectedOutput: 'Move disk 1 from A to B\nMove disk 2 from A to C\nMove disk 1 from B to C' }],
+        starterCode: { python: 'n = int(input())\n# Print moves: "Move disk X from Y to Z"', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        int n = new Scanner(System.in).nextInt();\n        // Print moves\n    }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Print moves\n    return 0;\n}' },
+      }),
+      mkProblem('generate-subsets', 'Generate All Subsets', 'medium', 'Generate all subsets of a given set using recursion. Print each subset on a line.', {
+        examples: [{ input: 'nums = [1,2,3]', output: '[1,2,3]\n[1,2]\n[1,3]\n[1]\n[2,3]\n[2]\n[3]\n[]' }],
+        constraints: ['1 <= nums.length <= 10'],
+        testCases: [{ input: '3\n1 2 3', expectedOutput: '1 2 3\n1 2\n1 3\n1\n2 3\n2\n3\n' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print all subsets', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Generate and print subsets\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Generate and print subsets\n    return 0;\n}' },
+      }),
+      mkProblem('string-permutations', 'String Permutations', 'hard', 'Generate all permutations of a string. Print each permutation on a line in lexicographic order.', {
+        examples: [{ input: 's = "abc"', output: 'abc\nacb\nbac\nbca\ncab\ncba' }],
+        constraints: ['1 <= s.length <= 8', 'String contains unique lowercase letters'],
+        testCases: [{ input: 'abc', expectedOutput: 'abc\nacb\nbac\nbca\ncab\ncba' }, { input: 'ab', expectedOutput: 'ab\nba' }],
+        starterCode: { python: 's = input()\n# Print all permutations in lexicographic order', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        String s = new Scanner(System.in).nextLine();\n        // Print permutations\n    }\n}', cpp: '#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\nint main() {\n    string s;\n    cin >> s;\n    // Print permutations\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -2451,9 +2815,24 @@ long mergeCount(int[] arr, int l, int r) {
     spaceComplexity: 'O(n) for Merge Sort, O(log n) for Quick Sort',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('binary-search-impl', 'Binary Search', 'easy', 'Implement binary search on a sorted array.'),
-      mkProblem('merge-sort-impl', 'Merge Sort', 'medium', 'Implement merge sort and sort an array.'),
-      mkProblem('count-inversions', 'Count Inversions', 'hard', 'Count the number of inversions in an array using merge sort.'),
+      mkProblem('binary-search-impl', 'Binary Search', 'easy', 'Implement binary search on a sorted array. Return the index or -1 if not found.', {
+        examples: [{ input: 'arr = [1,3,5,7,9], target = 5', output: '2' }, { input: 'arr = [1,3,5,7,9], target = 4', output: '-1' }],
+        constraints: ['1 <= arr.length <= 10^4', '-10^4 <= arr[i] <= 10^4', 'Array is sorted'],
+        testCases: [{ input: '5\n1 3 5 7 9\n5', expectedOutput: '2' }, { input: '5\n1 3 5 7 9\n4', expectedOutput: '-1' }],
+        starterCode: { python: 'n = int(input())\narr = list(map(int, input().split()))\ntarget = int(input())\n# Print index or -1', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for (int i = 0; i < n; i++) arr[i] = sc.nextInt();\n        int target = sc.nextInt();\n        // Print index or -1\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    vector<int> arr(n);\n    for (int i = 0; i < n; i++) cin >> arr[i];\n    int target;\n    cin >> target;\n    // Print index or -1\n    return 0;\n}' },
+      }),
+      mkProblem('merge-sort-impl', 'Merge Sort', 'medium', 'Implement merge sort and sort an array. Print the sorted result.', {
+        examples: [{ input: 'arr = [38,27,43,3,9,82,10]', output: '3 9 10 27 38 43 82' }],
+        constraints: ['1 <= arr.length <= 5 × 10^4'],
+        testCases: [{ input: '7\n38 27 43 3 9 82 10', expectedOutput: '3 9 10 27 38 43 82' }],
+        starterCode: { python: 'n = int(input())\narr = list(map(int, input().split()))\n# Implement merge sort and print sorted array', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Implement merge sort\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Implement merge sort\n    return 0;\n}' },
+      }),
+      mkProblem('count-inversions', 'Count Inversions', 'hard', 'Count the number of inversions in an array. An inversion is a pair (i,j) where i < j but arr[i] > arr[j].', {
+        examples: [{ input: 'arr = [5,3,2,4,1]', output: '8' }],
+        constraints: ['1 <= arr.length <= 10^5'],
+        testCases: [{ input: '5\n5 3 2 4 1', expectedOutput: '8' }, { input: '5\n1 2 3 4 5', expectedOutput: '0' }],
+        starterCode: { python: 'n = int(input())\narr = list(map(int, input().split()))\n# Print number of inversions', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Count inversions using merge sort\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Count inversions\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -2649,9 +3028,24 @@ boolean dfs(char[][] board, String word, int r, int c, int i) {
     spaceComplexity: 'O(n) recursion depth',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('generate-permutations', 'Generate Permutations', 'medium', 'Generate all permutations of an array of distinct integers.'),
-      mkProblem('n-queens', 'N-Queens Problem', 'hard', 'Place N queens on an N×N board so no two queens attack each other.'),
-      mkProblem('word-search', 'Word Search', 'hard', 'Find if a word exists in a 2D character grid by adjacent moves.'),
+      mkProblem('generate-permutations', 'Generate Permutations', 'medium', 'Generate all permutations of an array of distinct integers.', {
+        examples: [{ input: 'nums = [1,2,3]', output: '[[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]' }],
+        constraints: ['1 <= nums.length <= 6', '-10 <= nums[i] <= 10', 'All elements are unique'],
+        testCases: [{ input: '3\n1 2 3', expectedOutput: '1 2 3\n1 3 2\n2 1 3\n2 3 1\n3 1 2\n3 2 1' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print all permutations, one per line', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Generate and print permutations\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Generate and print permutations\n    return 0;\n}' },
+      }),
+      mkProblem('n-queens', 'N-Queens Problem', 'hard', 'Place N queens on an N×N board so no two queens attack each other. Print the number of solutions.', {
+        examples: [{ input: 'n = 4', output: '2', explanation: 'There are 2 valid arrangements for 4 queens.' }],
+        constraints: ['1 <= n <= 9'],
+        testCases: [{ input: '4', expectedOutput: '2' }, { input: '1', expectedOutput: '1' }, { input: '8', expectedOutput: '92' }],
+        starterCode: { python: 'n = int(input())\n# Print number of solutions', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        int n = new Scanner(System.in).nextInt();\n        // Print number of solutions\n    }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Print number of solutions\n    return 0;\n}' },
+      }),
+      mkProblem('word-search', 'Word Search', 'hard', 'Find if a word exists in a 2D character grid by moving to adjacent cells (up/down/left/right). Each cell can be used once.', {
+        examples: [{ input: 'board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "ABCCED"', output: 'true' }],
+        constraints: ['1 <= m, n <= 6', '1 <= word.length <= 15'],
+        testCases: [{ input: '3 4\nA B C E\nS F C S\nA D E E\nABCCED', expectedOutput: 'true' }, { input: '3 4\nA B C E\nS F C S\nA D E E\nABCB', expectedOutput: 'false' }],
+        starterCode: { python: 'r, c = map(int, input().split())\nboard = [input().split() for _ in range(r)]\nword = input()\n# Print "true" or "false"', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Read board and word, print "true" or "false"\n    }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\nint main() {\n    // Read board and word\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -2869,9 +3263,24 @@ cout << "Time: " << dur.count() << " µs" << endl;`,
     spaceComplexity: 'Varies by algorithm',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('identify-complexity', 'Identify Big O', 'easy', 'Given code snippets, identify their time complexity.'),
-      mkProblem('optimize-brute-force', 'Optimize Brute Force', 'medium', 'Given an O(n²) solution, optimize it to O(n) or O(n log n).'),
-      mkProblem('recurrence-solve', 'Solve Recurrence', 'hard', 'Apply the Master Theorem to solve recurrence relations.'),
+      mkProblem('identify-complexity', 'Identify Big O', 'easy', 'Given code snippets, identify their time complexity. Read a code pattern keyword and print the Big O.', {
+        examples: [{ input: 'single-loop', output: 'O(n)' }, { input: 'nested-loop', output: 'O(n^2)' }],
+        constraints: ['Input is one of: constant, single-loop, nested-loop, binary-search, sort'],
+        testCases: [{ input: 'single-loop', expectedOutput: 'O(n)' }, { input: 'nested-loop', expectedOutput: 'O(n^2)' }, { input: 'binary-search', expectedOutput: 'O(log n)' }],
+        starterCode: { python: 'pattern = input()\n# Print the Big O notation', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        String pattern = new Scanner(System.in).nextLine();\n        // Print Big O\n    }\n}', cpp: '#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string pattern;\n    cin >> pattern;\n    // Print Big O\n    return 0;\n}' },
+      }),
+      mkProblem('optimize-brute-force', 'Optimize Brute Force', 'medium', 'Given an array of n integers, check if any two elements sum to a target. Optimize from O(n²) to O(n) using a hash set.', {
+        examples: [{ input: 'nums = [1,4,6,3], target = 7', output: 'true', explanation: '1 + 6 = 7 or 4 + 3 = 7.' }],
+        constraints: ['1 <= n <= 10^5', '-10^9 <= nums[i] <= 10^9'],
+        testCases: [{ input: '4\n1 4 6 3\n7', expectedOutput: 'true' }, { input: '3\n1 2 3\n10', expectedOutput: 'false' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\ntarget = int(input())\n# Print "true" or "false" using O(n) solution', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // O(n) pair sum check\n    }\n}', cpp: '#include <iostream>\n#include <unordered_set>\nusing namespace std;\nint main() {\n    // O(n) pair sum check\n    return 0;\n}' },
+      }),
+      mkProblem('recurrence-solve', 'Solve Recurrence', 'hard', 'Apply the Master Theorem: given a, b, d, determine the complexity of T(n) = aT(n/b) + O(n^d).', {
+        examples: [{ input: 'a=2, b=2, d=1', output: 'O(n log n)', explanation: 'd = log_b(a) = 1, so T(n) = O(n log n).' }],
+        constraints: ['1 <= a, b <= 100', '0 <= d <= 10'],
+        testCases: [{ input: '2 2 1', expectedOutput: 'O(n log n)' }, { input: '1 2 0', expectedOutput: 'O(log n)' }, { input: '4 2 1', expectedOutput: 'O(n^2)' }],
+        starterCode: { python: 'a, b, d = map(int, input().split())\n# Apply Master Theorem and print complexity', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Apply Master Theorem\n    }\n}', cpp: '#include <iostream>\n#include <cmath>\nusing namespace std;\nint main() {\n    // Apply Master Theorem\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -3084,9 +3493,24 @@ private:
     spaceComplexity: 'O(n)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('remove-duplicates-sorted', 'Remove Duplicates from Sorted Array', 'easy', 'Remove duplicates in-place from a sorted array and return the new length.'),
-      mkProblem('move-zeroes', 'Move Zeroes', 'easy', 'Move all zeros to the end while keeping the order of non-zero elements.'),
-      mkProblem('implement-dynamic-array', 'Implement Dynamic Array', 'medium', 'Build a dynamic array class from scratch with append, get, and resize.'),
+      mkProblem('remove-duplicates-sorted', 'Remove Duplicates from Sorted Array', 'easy', 'Remove duplicates in-place from a sorted array. Return and print the new length.', {
+        examples: [{ input: 'nums = [1,1,2]', output: '2', explanation: 'After removal: [1,2], new length = 2.' }],
+        constraints: ['1 <= nums.length <= 3 × 10^4', '-100 <= nums[i] <= 100', 'Array is sorted'],
+        testCases: [{ input: '3\n1 1 2', expectedOutput: '2' }, { input: '10\n0 0 1 1 1 2 2 3 3 4', expectedOutput: '5' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print new length after removing duplicates', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Remove duplicates in-place, print new length\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Remove duplicates in-place, print new length\n    return 0;\n}' },
+      }),
+      mkProblem('move-zeroes', 'Move Zeroes', 'easy', 'Move all zeros to the end of the array while maintaining the relative order of non-zero elements. Do it in-place.', {
+        examples: [{ input: 'nums = [0,1,0,3,12]', output: '1 3 12 0 0' }],
+        constraints: ['1 <= nums.length <= 10^4'],
+        testCases: [{ input: '5\n0 1 0 3 12', expectedOutput: '1 3 12 0 0' }, { input: '1\n0', expectedOutput: '0' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Move zeroes and print', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Move zeroes, print result\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Move zeroes, print result\n    return 0;\n}' },
+      }),
+      mkProblem('implement-dynamic-array', 'Implement Dynamic Array', 'medium', 'Build a dynamic array class with append, get, and resize. Process commands and print results.', {
+        examples: [{ input: 'append 1, append 2, get 0, append 3, get 2', output: '1\n3' }],
+        constraints: ['1 <= operations <= 10^4'],
+        testCases: [{ input: '5\nappend 1\nappend 2\nget 0\nappend 3\nget 2', expectedOutput: '1\n3' }],
+        starterCode: { python: 'n = int(input())\n# Implement DynamicArray class\n# Process commands: append X, get I', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Implement dynamic array\n    }\n}', cpp: '#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    // Implement dynamic array\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -3345,9 +3769,24 @@ ListNode mergeKLists(ListNode[] lists) {
     spaceComplexity: 'O(n)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('reverse-linked-list', 'Reverse Linked List', 'easy', 'Reverse a singly linked list iteratively.'),
-      mkProblem('detect-cycle', 'Detect Cycle', 'medium', 'Determine if a linked list has a cycle using Floyd\'s algorithm.'),
-      mkProblem('merge-k-sorted', 'Merge K Sorted Lists', 'hard', 'Merge k sorted linked lists into one sorted list.'),
+      mkProblem('reverse-linked-list', 'Reverse Linked List', 'easy', 'Reverse a singly linked list iteratively. Given space-separated elements, print the reversed list.', {
+        examples: [{ input: '1 2 3 4 5', output: '5 4 3 2 1' }],
+        constraints: ['0 <= list.length <= 5000', '-5000 <= node.val <= 5000'],
+        testCases: [{ input: '1 2 3 4 5', expectedOutput: '5 4 3 2 1' }, { input: '1 2', expectedOutput: '2 1' }],
+        starterCode: { python: 'nums = list(map(int, input().split()))\n# Reverse the list and print', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Read list, reverse, print\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Read, reverse, print\n    return 0;\n}' },
+      }),
+      mkProblem('detect-cycle', 'Detect Cycle', 'medium', 'Determine if a linked list has a cycle. Given array and a cycle position (-1 for no cycle), print true/false.', {
+        examples: [{ input: 'nums = [3,2,0,-4], pos = 1', output: 'true', explanation: 'Tail connects to index 1.' }],
+        constraints: ['0 <= list.length <= 10^4', '-1 <= pos < list.length'],
+        testCases: [{ input: '4\n3 2 0 -4\n1', expectedOutput: 'true' }, { input: '1\n1\n-1', expectedOutput: 'false' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\npos = int(input())\n# Print "true" or "false"', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Detect cycle\n    }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    // Detect cycle\n    return 0;\n}' },
+      }),
+      mkProblem('merge-k-sorted', 'Merge K Sorted Lists', 'hard', 'Merge k sorted linked lists into one sorted list. Given k sorted arrays, merge and print.', {
+        examples: [{ input: 'lists = [[1,4,5],[1,3,4],[2,6]]', output: '1 1 2 3 4 4 5 6' }],
+        constraints: ['0 <= k <= 10^4', '0 <= list[i].length <= 500', '-10^4 <= node.val <= 10^4'],
+        testCases: [{ input: '3\n3\n1 4 5\n3\n1 3 4\n2\n2 6', expectedOutput: '1 1 2 3 4 4 5 6' }],
+        starterCode: { python: 'k = int(input())\nlists = []\nfor _ in range(k):\n    n = int(input())\n    lists.append(list(map(int, input().split())))\n# Merge and print', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Merge k sorted lists\n    }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <queue>\nusing namespace std;\nint main() {\n    // Merge k sorted lists\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -3585,9 +4024,24 @@ print(largest_rectangle([2, 1, 5, 6, 2, 3]))  # 10`,
     spaceComplexity: 'O(n)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('valid-parentheses', 'Valid Parentheses', 'easy', 'Check if a string of brackets is balanced.'),
-      mkProblem('next-greater-element', 'Next Greater Element', 'medium', 'Find the next greater element for each element in an array.'),
-      mkProblem('largest-rectangle-histogram', 'Largest Rectangle in Histogram', 'hard', 'Find the largest rectangular area in a histogram.'),
+      mkProblem('valid-parentheses', 'Valid Parentheses', 'easy', 'Check if a string of brackets (){}[] is balanced.', {
+        examples: [{ input: 's = "({[]})"', output: 'true' }, { input: 's = "({[}])"', output: 'false' }],
+        constraints: ['1 <= s.length <= 10^4', 'String contains only (){}[]'],
+        testCases: [{ input: '({[]})', expectedOutput: 'true' }, { input: '({[}])', expectedOutput: 'false' }, { input: '()', expectedOutput: 'true' }],
+        starterCode: { python: 's = input()\n# Print "true" or "false"', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        String s = new Scanner(System.in).nextLine();\n        // Print "true" or "false"\n    }\n}', cpp: '#include <iostream>\n#include <stack>\n#include <string>\nusing namespace std;\nint main() {\n    string s;\n    cin >> s;\n    // Print "true" or "false"\n    return 0;\n}' },
+      }),
+      mkProblem('next-greater-element', 'Next Greater Element', 'medium', 'For each element, find the next greater element to its right. Print -1 if none exists.', {
+        examples: [{ input: 'nums = [4,5,2,10,8]', output: '5 10 10 -1 -1' }],
+        constraints: ['1 <= nums.length <= 10^4'],
+        testCases: [{ input: '5\n4 5 2 10 8', expectedOutput: '5 10 10 -1 -1' }, { input: '3\n3 2 1', expectedOutput: '-1 -1 -1' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print next greater elements space-separated', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Find next greater elements\n    }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <stack>\nusing namespace std;\nint main() {\n    // Find next greater elements\n    return 0;\n}' },
+      }),
+      mkProblem('largest-rectangle-histogram', 'Largest Rectangle in Histogram', 'hard', 'Find the largest rectangular area in a histogram represented by an array of bar heights.', {
+        examples: [{ input: 'heights = [2,1,5,6,2,3]', output: '10', explanation: 'Rectangle of height 5 and width 2.' }],
+        constraints: ['1 <= heights.length <= 10^5', '0 <= heights[i] <= 10^4'],
+        testCases: [{ input: '6\n2 1 5 6 2 3', expectedOutput: '10' }, { input: '2\n2 4', expectedOutput: '4' }],
+        starterCode: { python: 'n = int(input())\nheights = list(map(int, input().split()))\n# Print largest rectangle area', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Largest rectangle in histogram\n    }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <stack>\nusing namespace std;\nint main() {\n    // Largest rectangle\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -3780,9 +4234,24 @@ def bfs(graph, start, target):
     spaceComplexity: 'O(n)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('implement-queue-stacks', 'Queue using Stacks', 'easy', 'Implement a queue using two stacks.'),
-      mkProblem('sliding-window-max', 'Sliding Window Maximum', 'hard', 'Find the maximum in every sliding window of size k.'),
-      mkProblem('rotting-oranges', 'Rotting Oranges (BFS)', 'medium', 'Find the minimum time for all oranges to rot using multi-source BFS.'),
+      mkProblem('implement-queue-stacks', 'Queue using Stacks', 'easy', 'Implement a FIFO queue using two stacks. Process enqueue/dequeue commands and print dequeue results.', {
+        examples: [{ input: 'enqueue 1, enqueue 2, dequeue, enqueue 3, dequeue', output: '1\n2' }],
+        constraints: ['1 <= operations <= 100'],
+        testCases: [{ input: '5\nenqueue 1\nenqueue 2\ndequeue\nenqueue 3\ndequeue', expectedOutput: '1\n2' }],
+        starterCode: { python: 'n = int(input())\n# Implement queue using two stacks\n# Process enqueue/dequeue commands', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Queue using two stacks\n    }\n}', cpp: '#include <iostream>\n#include <stack>\n#include <string>\nusing namespace std;\nint main() {\n    // Queue using two stacks\n    return 0;\n}' },
+      }),
+      mkProblem('sliding-window-max', 'Sliding Window Maximum', 'hard', 'Find the maximum in every contiguous window of size k as it slides across the array.', {
+        examples: [{ input: 'nums = [1,3,-1,-3,5,3,6,7], k = 3', output: '3 3 5 5 6 7' }],
+        constraints: ['1 <= nums.length <= 10^5', '-10^4 <= nums[i] <= 10^4', '1 <= k <= nums.length'],
+        testCases: [{ input: '8\n1 3 -1 -3 5 3 6 7\n3', expectedOutput: '3 3 5 5 6 7' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\nk = int(input())\n# Print window maximums space-separated', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Sliding window max\n    }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <deque>\nusing namespace std;\nint main() {\n    // Sliding window max\n    return 0;\n}' },
+      }),
+      mkProblem('rotting-oranges', 'Rotting Oranges (BFS)', 'medium', 'In a grid, 0=empty, 1=fresh, 2=rotten. Each minute rotten oranges infect adjacent fresh ones. Find min minutes until no fresh oranges remain, or -1.', {
+        examples: [{ input: 'grid = [[2,1,1],[1,1,0],[0,1,1]]', output: '4' }],
+        constraints: ['1 <= m, n <= 10'],
+        testCases: [{ input: '3 3\n2 1 1\n1 1 0\n0 1 1', expectedOutput: '4' }, { input: '3 3\n2 1 1\n0 1 1\n1 0 1', expectedOutput: '-1' }],
+        starterCode: { python: 'r, c = map(int, input().split())\ngrid = [list(map(int, input().split())) for _ in range(r)]\n# Print min minutes or -1', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Multi-source BFS\n    }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <queue>\nusing namespace std;\nint main() {\n    // Multi-source BFS\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -3976,9 +4445,24 @@ def job_sequencing(jobs):
     spaceComplexity: 'O(n)',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('activity-selection', 'Activity Selection', 'easy', 'Select the maximum number of non-overlapping activities.'),
-      mkProblem('jump-game', 'Jump Game', 'medium', 'Determine if you can reach the last index given jump lengths.'),
-      mkProblem('minimum-meeting-rooms', 'Minimum Meeting Rooms', 'hard', 'Find the minimum number of conference rooms needed for all meetings.'),
+      mkProblem('activity-selection', 'Activity Selection', 'easy', 'Select the maximum number of non-overlapping activities. Given activities with start/end times.', {
+        examples: [{ input: 'activities = [(1,4),(3,5),(0,6),(5,7),(3,8),(5,9),(6,10),(8,11)]', output: '3', explanation: 'Select (1,4), (5,7), (8,11).' }],
+        constraints: ['1 <= n <= 10^5'],
+        testCases: [{ input: '8\n1 4\n3 5\n0 6\n5 7\n3 8\n5 9\n6 10\n8 11', expectedOutput: '3' }],
+        starterCode: { python: 'n = int(input())\nactivities = [tuple(map(int, input().split())) for _ in range(n)]\n# Print max non-overlapping activities', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Activity selection\n    }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    // Activity selection\n    return 0;\n}' },
+      }),
+      mkProblem('jump-game', 'Jump Game', 'medium', 'Given an array where each element is the max jump length, determine if you can reach the last index.', {
+        examples: [{ input: 'nums = [2,3,1,1,4]', output: 'true' }, { input: 'nums = [3,2,1,0,4]', output: 'false' }],
+        constraints: ['1 <= nums.length <= 10^4', '0 <= nums[i] <= 10^5'],
+        testCases: [{ input: '5\n2 3 1 1 4', expectedOutput: 'true' }, { input: '5\n3 2 1 0 4', expectedOutput: 'false' }],
+        starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print "true" or "false"', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Jump game\n    }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    // Jump game\n    return 0;\n}' },
+      }),
+      mkProblem('minimum-meeting-rooms', 'Minimum Meeting Rooms', 'hard', 'Find the minimum number of conference rooms needed for all meetings given their intervals.', {
+        examples: [{ input: 'intervals = [(0,30),(5,10),(15,20)]', output: '2' }],
+        constraints: ['1 <= intervals.length <= 10^4'],
+        testCases: [{ input: '3\n0 30\n5 10\n15 20', expectedOutput: '2' }, { input: '2\n7 10\n2 4', expectedOutput: '1' }],
+        starterCode: { python: 'n = int(input())\nintervals = [tuple(map(int, input().split())) for _ in range(n)]\n# Print min rooms', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Min meeting rooms\n    }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <queue>\nusing namespace std;\nint main() {\n    // Min meeting rooms\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -4192,9 +4676,24 @@ def serialize(root):
     spaceComplexity: 'O(h) where h = height',
     codeExamples: { python: '# See theory levels', java: '// See theory levels', cpp: '// See theory levels' },
     problems: [
-      mkProblem('tree-inorder', 'Inorder Traversal', 'easy', 'Return the inorder traversal of a binary tree.'),
-      mkProblem('level-order-traversal', 'Level Order Traversal', 'medium', 'Return the level order traversal of a binary tree.'),
-      mkProblem('max-path-sum', 'Maximum Path Sum', 'hard', 'Find the maximum sum path in a binary tree.'),
+      mkProblem('tree-inorder', 'Inorder Traversal', 'easy', 'Return the inorder traversal of a binary tree given as array representation.', {
+        examples: [{ input: 'tree = [1,null,2,3]', output: '1 3 2' }],
+        constraints: ['0 <= nodes <= 100'],
+        testCases: [{ input: '1 null 2 3', expectedOutput: '1 3 2' }],
+        starterCode: { python: 'vals = input().split()\n# Build tree and print inorder traversal', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Inorder traversal\n    }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    // Inorder traversal\n    return 0;\n}' },
+      }),
+      mkProblem('level-order-traversal', 'Level Order Traversal', 'medium', 'Return the level order traversal of a binary tree. Print each level on a separate line.', {
+        examples: [{ input: 'tree = [3,9,20,null,null,15,7]', output: '3\n9 20\n15 7' }],
+        constraints: ['0 <= nodes <= 2000'],
+        testCases: [{ input: '3 9 20 null null 15 7', expectedOutput: '3\n9 20\n15 7' }],
+        starterCode: { python: 'vals = input().split()\n# Build tree, print level order', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Level order traversal\n    }\n}', cpp: '#include <iostream>\n#include <queue>\nusing namespace std;\nint main() {\n    // Level order traversal\n    return 0;\n}' },
+      }),
+      mkProblem('max-path-sum', 'Maximum Path Sum', 'hard', 'Find the maximum sum path in a binary tree. A path can start and end at any node.', {
+        examples: [{ input: 'tree = [-10,9,20,null,null,15,7]', output: '42', explanation: 'Path: 15 → 20 → 7' }],
+        constraints: ['1 <= nodes <= 3 × 10^4', '-1000 <= node.val <= 1000'],
+        testCases: [{ input: '-10 9 20 null null 15 7', expectedOutput: '42' }, { input: '1 2 3', expectedOutput: '6' }],
+        starterCode: { python: 'vals = input().split()\n# Build tree, print max path sum', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        // Max path sum\n    }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    // Max path sum\n    return 0;\n}' },
+      }),
     ],
   },
 
@@ -4219,7 +4718,26 @@ def serialize(root):
         cpp: `TreeNode* rightRotate(TreeNode* y) {\n    TreeNode* x = y->left;\n    TreeNode* T2 = x->right;\n    x->right = y; y->left = T2;\n    return x;\n}` },
       tc: [{ operation: 'Search/Insert/Delete', best: 'O(log n)', average: 'O(log n)', worst: 'O(n)' }],
       sc: 'O(n)',
-      probs: [mkProblem('bst-insert-search', 'BST Insert & Search', 'easy', 'Implement insert and search in a BST.'), mkProblem('validate-bst', 'Validate BST', 'medium', 'Check if a binary tree is a valid BST.'), mkProblem('bst-delete', 'Delete Node in BST', 'hard', 'Delete a node from a BST and maintain BST property.')]
+      probs: [
+        mkProblem('bst-insert-search', 'BST Insert & Search', 'easy', 'Implement insert and search in a BST. Given values to insert and a search target.', {
+          examples: [{ input: 'insert: [5,3,7,1,4], search: 4', output: 'true' }],
+          constraints: ['1 <= n <= 10^4', '-10^4 <= val <= 10^4'],
+          testCases: [{ input: '5\n5 3 7 1 4\n4', expectedOutput: 'true' }, { input: '3\n5 3 7\n6', expectedOutput: 'false' }],
+          starterCode: { python: 'n = int(input())\nvals = list(map(int, input().split()))\ntarget = int(input())\n# Build BST, search, print "true"/"false"', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* BST insert & search */ }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() { /* BST insert & search */ return 0; }' },
+        }),
+        mkProblem('validate-bst', 'Validate BST', 'medium', 'Check if a binary tree is a valid BST.', {
+          examples: [{ input: 'tree = [2,1,3]', output: 'true' }, { input: 'tree = [5,1,4,null,null,3,6]', output: 'false' }],
+          constraints: ['1 <= nodes <= 10^4'],
+          testCases: [{ input: '2 1 3', expectedOutput: 'true' }, { input: '5 1 4 null null 3 6', expectedOutput: 'false' }],
+          starterCode: { python: 'vals = input().split()\n# Build tree, print "true"/"false"', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Validate BST */ }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() { /* Validate BST */ return 0; }' },
+        }),
+        mkProblem('bst-delete', 'Delete Node in BST', 'hard', 'Delete a node from a BST and maintain BST property. Print inorder after deletion.', {
+          examples: [{ input: 'tree = [5,3,6,2,4,null,7], key = 3', output: '2 4 5 6 7' }],
+          constraints: ['1 <= nodes <= 10^4'],
+          testCases: [{ input: '5 3 6 2 4 null 7\n3', expectedOutput: '2 4 5 6 7' }],
+          starterCode: { python: 'vals = input().split()\nkey = int(input())\n# Delete key, print inorder', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Delete BST node */ }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() { /* Delete BST node */ return 0; }' },
+        }),
+      ]
     },
     {
       id: 'heaps', title: 'Heaps / Priority Queues', icon: '⛰️', color: 'purple', order: 25, hours: 4,
@@ -4240,7 +4758,20 @@ def serialize(root):
         cpp: `class MedianFinder {\n    priority_queue<int> lo;\n    priority_queue<int, vector<int>, greater<int>> hi;\npublic:\n    void addNum(int num) {\n        lo.push(num); hi.push(lo.top()); lo.pop();\n        if (hi.size() > lo.size()) { lo.push(hi.top()); hi.pop(); }\n    }\n    double findMedian() {\n        return lo.size() > hi.size() ? lo.top() : (lo.top() + hi.top()) / 2.0;\n    }\n};` },
       tc: [{ operation: 'Insert', best: 'O(1)', average: 'O(log n)', worst: 'O(log n)' }, { operation: 'Extract Min/Max', best: 'O(log n)', average: 'O(log n)', worst: 'O(log n)' }, { operation: 'Heapify', best: 'O(n)', average: 'O(n)', worst: 'O(n)' }],
       sc: 'O(n)',
-      probs: [mkProblem('kth-largest-element', 'Kth Largest Element', 'medium', 'Find the kth largest element in an unsorted array.'), mkProblem('find-median-stream', 'Find Median from Stream', 'hard', 'Find the median from a continuous stream of numbers.')]
+      probs: [
+        mkProblem('kth-largest-element', 'Kth Largest Element', 'medium', 'Find the kth largest element in an unsorted array using a heap.', {
+          examples: [{ input: 'nums = [3,2,1,5,6,4], k = 2', output: '5' }],
+          constraints: ['1 <= k <= n <= 10^5'],
+          testCases: [{ input: '6\n3 2 1 5 6 4\n2', expectedOutput: '5' }],
+          starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\nk = int(input())\n# Print kth largest', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Kth largest */ }\n}', cpp: '#include <iostream>\n#include <queue>\nusing namespace std;\nint main() { /* Kth largest */ return 0; }' },
+        }),
+        mkProblem('find-median-stream', 'Find Median from Stream', 'hard', 'Find the median from a continuous stream of numbers using two heaps.', {
+          examples: [{ input: 'stream = [5,15,1,3]', output: '5.0\n10.0\n5.0\n4.0' }],
+          constraints: ['-10^5 <= num <= 10^5', 'Up to 5 × 10^4 calls'],
+          testCases: [{ input: '4\n5 15 1 3', expectedOutput: '5.0\n10.0\n5.0\n4.0' }],
+          starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# After each number, print current median', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Median stream */ }\n}', cpp: '#include <iostream>\n#include <queue>\nusing namespace std;\nint main() { /* Median stream */ return 0; }' },
+        }),
+      ]
     },
     {
       id: 'hashing', title: 'Hashing', icon: '#️⃣', color: 'amber', order: 26, hours: 3,
@@ -4261,7 +4792,26 @@ def serialize(root):
         cpp: `// Rolling hash\nlong long h = 0;\nfor (int i = 0; i < m; i++)\n    h = (h * 256 + pattern[i]) % MOD;` },
       tc: [{ operation: 'Insert/Delete/Search', best: 'O(1)', average: 'O(1)', worst: 'O(n)' }],
       sc: 'O(n)',
-      probs: [mkProblem('two-sum-hash', 'Two Sum (Hash Map)', 'easy', 'Find two numbers that add up to target using a hash map.'), mkProblem('group-anagrams-hash', 'Group Anagrams', 'medium', 'Group strings that are anagrams of each other.'), mkProblem('longest-consecutive', 'Longest Consecutive Sequence', 'hard', 'Find the length of the longest consecutive sequence in O(n).')]
+      probs: [
+        mkProblem('two-sum-hash', 'Two Sum (Hash Map)', 'easy', 'Find two numbers that add up to target using a hash map. Return indices.', {
+          examples: [{ input: 'nums = [2,7,11,15], target = 9', output: '0 1' }],
+          constraints: ['2 <= n <= 10^4'],
+          testCases: [{ input: '4\n2 7 11 15\n9', expectedOutput: '0 1' }],
+          starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\ntarget = int(input())\n# Print indices', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Two sum hash */ }\n}', cpp: '#include <iostream>\n#include <unordered_map>\nusing namespace std;\nint main() { /* Two sum hash */ return 0; }' },
+        }),
+        mkProblem('group-anagrams-hash', 'Group Anagrams', 'medium', 'Group strings that are anagrams using hash maps.', {
+          examples: [{ input: 'strs = ["eat","tea","tan","ate","nat","bat"]', output: 'eat tea ate\ntan nat\nbat' }],
+          constraints: ['1 <= strs.length <= 10^4'],
+          testCases: [{ input: '6\neat tea tan ate nat bat', expectedOutput: 'eat tea ate\ntan nat\nbat' }],
+          starterCode: { python: 'n = int(input())\nstrs = input().split()\n# Group and print anagrams', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Group anagrams */ }\n}', cpp: '#include <iostream>\n#include <unordered_map>\nusing namespace std;\nint main() { /* Group anagrams */ return 0; }' },
+        }),
+        mkProblem('longest-consecutive', 'Longest Consecutive Sequence', 'hard', 'Find the length of the longest consecutive sequence in O(n) using a hash set.', {
+          examples: [{ input: 'nums = [100,4,200,1,3,2]', output: '4', explanation: 'Sequence: [1,2,3,4]' }],
+          constraints: ['0 <= n <= 10^5'],
+          testCases: [{ input: '6\n100 4 200 1 3 2', expectedOutput: '4' }, { input: '10\n0 3 7 2 5 8 4 6 0 1', expectedOutput: '9' }],
+          starterCode: { python: 'n = int(input())\nnums = list(map(int, input().split()))\n# Print longest consecutive length', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Longest consecutive */ }\n}', cpp: '#include <iostream>\n#include <unordered_set>\nusing namespace std;\nint main() { /* Longest consecutive */ return 0; }' },
+        }),
+      ]
     },
     {
       id: 'tries', title: 'Tries', icon: '🔤', color: 'green', order: 27, hours: 4,
@@ -4282,7 +4832,20 @@ def serialize(root):
         cpp: `// XOR Trie for maximum XOR pair\n// Insert each number's bits from MSB to LSB\n// Query by trying opposite bits for maximum XOR` },
       tc: [{ operation: 'Insert/Search', best: 'O(m)', average: 'O(m)', worst: 'O(m)' }],
       sc: 'O(n × m) where n=words, m=avg length',
-      probs: [mkProblem('implement-trie', 'Implement Trie', 'medium', 'Build a trie with insert, search, and startsWith.'), mkProblem('word-search-ii', 'Word Search II', 'hard', 'Find all words from a dictionary that exist in a 2D board using Trie.')]
+      probs: [
+        mkProblem('implement-trie', 'Implement Trie', 'medium', 'Build a trie with insert, search, and startsWith operations.', {
+          examples: [{ input: 'insert "apple", search "apple" → true, startsWith "app" → true', output: 'true\ntrue' }],
+          constraints: ['1 <= word.length <= 2000'],
+          testCases: [{ input: '5\ninsert apple\nsearch apple\nsearch app\nstartsWith app\ninsert app', expectedOutput: 'true\nfalse\ntrue' }],
+          starterCode: { python: 'n = int(input())\n# Implement Trie, process commands', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Trie */ }\n}', cpp: '#include <iostream>\n#include <unordered_map>\nusing namespace std;\nint main() { /* Trie */ return 0; }' },
+        }),
+        mkProblem('word-search-ii', 'Word Search II', 'hard', 'Find all words from a dictionary that exist in a 2D board using Trie for efficiency.', {
+          examples: [{ input: 'board = [["o","a","a","n"],["e","t","a","e"]], words = ["oath","pea","eat","rain"]', output: 'oath eat' }],
+          constraints: ['1 <= m, n <= 12', '1 <= words.length <= 3 × 10^4'],
+          testCases: [{ input: '2 4\no a a n\ne t a e\n4\noath pea eat rain', expectedOutput: 'eat oath' }],
+          starterCode: { python: 'r, c = map(int, input().split())\nboard = [input().split() for _ in range(r)]\nn = int(input())\nwords = input().split()\n# Print found words', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Word Search II */ }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() { /* Word Search II */ return 0; }' },
+        }),
+      ]
     },
     {
       id: 'graphs', title: 'Graphs', icon: '🕸️', color: 'cyan', order: 28, hours: 8,
@@ -4303,7 +4866,26 @@ def serialize(root):
         cpp: `vector<int> dijkstra(vector<vector<pair<int,int>>>& graph, int src) {\n    int n = graph.size();\n    vector<int> dist(n, INT_MAX);\n    dist[src] = 0;\n    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;\n    pq.push({0, src});\n    while (!pq.empty()) {\n        auto [d, u] = pq.top(); pq.pop();\n        if (d > dist[u]) continue;\n        for (auto [v, w] : graph[u]) {\n            if (dist[u] + w < dist[v]) {\n                dist[v] = dist[u] + w;\n                pq.push({dist[v], v});\n            }\n        }\n    }\n    return dist;\n}` },
       tc: [{ operation: 'BFS/DFS', best: 'O(V+E)', average: 'O(V+E)', worst: 'O(V+E)' }, { operation: 'Dijkstra', best: 'O((V+E)log V)', average: 'O((V+E)log V)', worst: 'O((V+E)log V)' }],
       sc: 'O(V+E)',
-      probs: [mkProblem('bfs-shortest-path', 'BFS Shortest Path', 'easy', 'Find shortest path in unweighted graph using BFS.'), mkProblem('course-schedule', 'Course Schedule (Topo Sort)', 'medium', 'Determine if you can finish all courses given prerequisites.'), mkProblem('dijkstra-impl', 'Dijkstra\'s Shortest Path', 'hard', 'Find shortest paths from source in a weighted graph.')]
+      probs: [
+        mkProblem('bfs-shortest-path', 'BFS Shortest Path', 'easy', 'Find shortest path in an unweighted graph using BFS.', {
+          examples: [{ input: 'graph with 5 nodes, start=0, end=4', output: '2' }],
+          constraints: ['1 <= V <= 10^4', '0 <= E <= 10^5'],
+          testCases: [{ input: '5 6\n0 1\n0 2\n1 3\n2 3\n3 4\n1 4\n0 4', expectedOutput: '2' }],
+          starterCode: { python: 'v, e = map(int, input().split())\nedges = [tuple(map(int, input().split())) for _ in range(e)]\nstart, end = map(int, input().split())\n# Print shortest distance', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* BFS */ }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <queue>\nusing namespace std;\nint main() { /* BFS */ return 0; }' },
+        }),
+        mkProblem('course-schedule', 'Course Schedule (Topo Sort)', 'medium', 'Determine if you can finish all courses given prerequisites. Detect cycle in directed graph.', {
+          examples: [{ input: 'numCourses=2, prerequisites=[[1,0]]', output: 'true', explanation: 'Take course 0 then 1.' }],
+          constraints: ['1 <= numCourses <= 2000', '0 <= prerequisites.length <= 5000'],
+          testCases: [{ input: '2 1\n1 0', expectedOutput: 'true' }, { input: '2 2\n1 0\n0 1', expectedOutput: 'false' }],
+          starterCode: { python: 'n, m = map(int, input().split())\nprereqs = [tuple(map(int, input().split())) for _ in range(m)]\n# Print "true" or "false"', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Course schedule */ }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() { /* Course schedule */ return 0; }' },
+        }),
+        mkProblem('dijkstra-impl', 'Dijkstra\'s Shortest Path', 'hard', 'Find shortest paths from source in a weighted graph using Dijkstra\'s algorithm.', {
+          examples: [{ input: 'graph: A→B(1), A→C(4), B→C(2), B→D(5), C→D(1), src=A', output: 'A:0 B:1 C:3 D:4' }],
+          constraints: ['1 <= V <= 10^4', '0 <= E <= 10^5', 'Non-negative weights'],
+          testCases: [{ input: '4 5\n0 1 1\n0 2 4\n1 2 2\n1 3 5\n2 3 1\n0', expectedOutput: '0 1 3 4' }],
+          starterCode: { python: 'v, e = map(int, input().split())\nedges = []\nfor _ in range(e):\n    u, v_, w = map(int, input().split())\n    edges.append((u, v_, w))\nsrc = int(input())\n# Print shortest distances', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Dijkstra */ }\n}', cpp: '#include <iostream>\n#include <vector>\n#include <queue>\nusing namespace std;\nint main() { /* Dijkstra */ return 0; }' },
+        }),
+      ]
     },
     {
       id: 'dp', title: 'Dynamic Programming', icon: '📐', color: 'purple', order: 29, hours: 10,
@@ -4324,7 +4906,32 @@ def serialize(root):
         cpp: `int editDistance(string s1, string s2) {\n    int m = s1.size(), n = s2.size();\n    vector<vector<int>> dp(m+1, vector<int>(n+1));\n    for (int i = 0; i <= m; i++) dp[i][0] = i;\n    for (int j = 0; j <= n; j++) dp[0][j] = j;\n    for (int i = 1; i <= m; i++)\n        for (int j = 1; j <= n; j++) {\n            if (s1[i-1] == s2[j-1]) dp[i][j] = dp[i-1][j-1];\n            else dp[i][j] = 1 + min({dp[i-1][j-1], dp[i-1][j], dp[i][j-1]});\n        }\n    return dp[m][n];\n}` },
       tc: [{ operation: 'Fibonacci/Stairs', best: 'O(n)', average: 'O(n)', worst: 'O(n)' }, { operation: 'Knapsack/LCS', best: 'O(n×m)', average: 'O(n×m)', worst: 'O(n×m)' }, { operation: 'TSP (bitmask)', best: 'O(2^n × n²)', average: 'O(2^n × n²)', worst: 'O(2^n × n²)' }],
       sc: 'O(n×m) for 2D DP',
-      probs: [mkProblem('climbing-stairs', 'Climbing Stairs', 'easy', 'Count ways to climb n stairs taking 1 or 2 steps.'), mkProblem('knapsack-01', '0/1 Knapsack', 'medium', 'Maximize value in a knapsack with weight constraint.'), mkProblem('lcs-dp', 'Longest Common Subsequence', 'medium', 'Find the longest common subsequence of two strings.'), mkProblem('edit-distance', 'Edit Distance', 'hard', 'Find the minimum edit distance between two strings.')]
+      probs: [
+        mkProblem('climbing-stairs', 'Climbing Stairs', 'easy', 'Count ways to climb n stairs taking 1 or 2 steps at a time.', {
+          examples: [{ input: 'n = 3', output: '3', explanation: '1+1+1, 1+2, 2+1' }],
+          constraints: ['1 <= n <= 45'],
+          testCases: [{ input: '3', expectedOutput: '3' }, { input: '5', expectedOutput: '8' }],
+          starterCode: { python: 'n = int(input())\n# Print number of ways', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { int n = new Scanner(System.in).nextInt(); /* climb */ }\n}', cpp: '#include <iostream>\nusing namespace std;\nint main() { int n; cin >> n; /* climb */ return 0; }' },
+        }),
+        mkProblem('knapsack-01', '0/1 Knapsack', 'medium', 'Maximize value in a knapsack with weight constraint. Each item can be taken or left.', {
+          examples: [{ input: 'W=50, items=[(60,10),(100,20),(120,30)]', output: '220' }],
+          constraints: ['1 <= n <= 100', '1 <= W <= 10^4'],
+          testCases: [{ input: '3 50\n60 10\n100 20\n120 30', expectedOutput: '220' }],
+          starterCode: { python: 'n, W = map(int, input().split())\nitems = [tuple(map(int, input().split())) for _ in range(n)]\n# Print max value', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* 0/1 knapsack */ }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() { /* 0/1 knapsack */ return 0; }' },
+        }),
+        mkProblem('lcs-dp', 'Longest Common Subsequence', 'medium', 'Find the length of the longest common subsequence of two strings.', {
+          examples: [{ input: 's1 = "abcde", s2 = "ace"', output: '3', explanation: 'LCS is "ace"' }],
+          constraints: ['1 <= s1.length, s2.length <= 1000'],
+          testCases: [{ input: 'abcde\nace', expectedOutput: '3' }, { input: 'abc\nabc', expectedOutput: '3' }],
+          starterCode: { python: 's1 = input()\ns2 = input()\n# Print LCS length', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* LCS */ }\n}', cpp: '#include <iostream>\n#include <string>\nusing namespace std;\nint main() { /* LCS */ return 0; }' },
+        }),
+        mkProblem('edit-distance', 'Edit Distance', 'hard', 'Find the minimum number of operations (insert, delete, replace) to convert one string to another.', {
+          examples: [{ input: 's1 = "kitten", s2 = "sitting"', output: '3' }],
+          constraints: ['0 <= s1.length, s2.length <= 500'],
+          testCases: [{ input: 'kitten\nsitting', expectedOutput: '3' }, { input: 'horse\nros', expectedOutput: '3' }],
+          starterCode: { python: 's1 = input()\ns2 = input()\n# Print min edit distance', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Edit distance */ }\n}', cpp: '#include <iostream>\n#include <string>\nusing namespace std;\nint main() { /* Edit distance */ return 0; }' },
+        }),
+      ]
     },
     {
       id: 'segment-trees', title: 'Segment Trees', icon: '🌲', color: 'amber', order: 30, hours: 6,
@@ -4345,7 +4952,26 @@ def serialize(root):
         cpp: `void pushDown(int node, int s, int e) {\n    if (lazy[node]) {\n        int mid = (s+e)/2;\n        apply(2*node, s, mid, lazy[node]);\n        apply(2*node+1, mid+1, e, lazy[node]);\n        lazy[node] = 0;\n    }\n}` },
       tc: [{ operation: 'Build', best: 'O(n)', average: 'O(n)', worst: 'O(n)' }, { operation: 'Query', best: 'O(log n)', average: 'O(log n)', worst: 'O(log n)' }, { operation: 'Update', best: 'O(log n)', average: 'O(log n)', worst: 'O(log n)' }],
       sc: 'O(n)',
-      probs: [mkProblem('range-sum-query', 'Range Sum Query', 'medium', 'Build a segment tree and answer range sum queries with point updates.'), mkProblem('range-min-query', 'Range Min Query', 'medium', 'Implement range minimum query using segment tree.'), mkProblem('lazy-propagation', 'Lazy Propagation', 'hard', 'Implement range update and range query using lazy segment tree.')]
+      probs: [
+        mkProblem('range-sum-query', 'Range Sum Query', 'medium', 'Build a segment tree, answer range sum queries, and handle point updates.', {
+          examples: [{ input: 'arr = [1,3,5,7,9,11], query(1,3) = 15', output: '15' }],
+          constraints: ['1 <= n <= 3 × 10^4'],
+          testCases: [{ input: '6\n1 3 5 7 9 11\n2\nquery 1 3\nquery 0 5', expectedOutput: '15\n36' }],
+          starterCode: { python: 'n = int(input())\narr = list(map(int, input().split()))\nq = int(input())\n# Build segment tree, process queries', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Segment tree */ }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() { /* Segment tree */ return 0; }' },
+        }),
+        mkProblem('range-min-query', 'Range Min Query', 'medium', 'Implement range minimum query using a segment tree.', {
+          examples: [{ input: 'arr = [2,5,1,4,9,3], query(1,4) = 1', output: '1' }],
+          constraints: ['1 <= n <= 3 × 10^4'],
+          testCases: [{ input: '6\n2 5 1 4 9 3\n1\nquery 1 4', expectedOutput: '1' }],
+          starterCode: { python: 'n = int(input())\narr = list(map(int, input().split()))\n# Build RMQ segment tree', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* RMQ */ }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() { /* RMQ */ return 0; }' },
+        }),
+        mkProblem('lazy-propagation', 'Lazy Propagation', 'hard', 'Implement range update and range query using lazy propagation on a segment tree.', {
+          examples: [{ input: 'arr = [1,3,5,7,9], add 2 to range [1,3], query(1,3) = 21', output: '21' }],
+          constraints: ['1 <= n <= 10^5'],
+          testCases: [{ input: '5\n1 3 5 7 9\n2\nupdate 1 3 2\nquery 1 3', expectedOutput: '21' }],
+          starterCode: { python: 'n = int(input())\narr = list(map(int, input().split()))\n# Build lazy segment tree', java: 'import java.util.*;\npublic class Solution {\n    public static void main(String[] args) { /* Lazy seg tree */ }\n}', cpp: '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() { /* Lazy seg tree */ return 0; }' },
+        }),
+      ]
     },
   ].map(t => ({
     id: t.id,
