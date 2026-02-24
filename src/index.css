@@ -283,3 +283,13 @@
   border-radius: 2px;
   transition: width 0.4s ease-out;
 }
+
+/* Quiz answer states */
+.quiz-correct {
+  border-color: hsl(var(--green)) !important;
+  box-shadow: 0 0 12px hsl(var(--green) / 0.2);
+}
+.quiz-incorrect {
+  border-color: hsl(var(--destructive)) !important;
+  box-shadow: 0 0 12px hsl(var(--destructive) / 0.2);
+}

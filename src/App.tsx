@@ -8,6 +8,7 @@ import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import CurriculumPage from "@/pages/CurriculumPage";
 import TheoryPage from "@/pages/TheoryPage";
+import TheoryLevelPage from "@/pages/TheoryLevelPage";
 import CodeEditorPage from "@/pages/CodeEditorPage";
 import PracticePage from "@/pages/PracticePage";
 import ProgressPage from "@/pages/ProgressPage";
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/" element={<Dashboard />} />
               <Route path="/curriculum" element={<CurriculumPage />} />
               <Route path="/curriculum/:topicId" element={<TheoryPage />} />
+              <Route path="/curriculum/:topicId/:level" element={<TheoryLevelPage />} />
               <Route path="/editor" element={<CodeEditorPage />} />
               <Route path="/practice" element={<PracticePage />} />
               <Route path="/progress" element={<ProgressPage />} />
