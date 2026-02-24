@@ -1,142 +1,80 @@
 
 
-# Plan: Split Theory into Level Pages with AI Quiz Generator
+# Fix Practice Problem Examples and Constraints
 
-## Overview
+## Problem
+All practice problems use the `mkProblem` helper which fills in placeholder text ("See description") for examples, constraints, test cases, and starter code. This means the problem description panel shows useless generic text instead of actual input/output examples and constraints.
 
-Instead of showing Beginner, Intermediate, and Advanced all on one page, each level becomes its own full-page view with navigation arrows. At the bottom of each level, an AI-powered quiz is dynamically generated based on that level's theory content.
+## Solution
+Update the `mkProblem` helper calls in `src/data/curriculum.ts` to include real, problem-specific data for each problem. This is a data-only change -- no component code needs to change.
 
-## New Page Flow
+There are approximately 50+ problems across all topics. Each problem needs:
+- **Examples**: Real input/output pairs with optional explanations
+- **Constraints**: Array size limits, value ranges, etc.
+- **Test cases**: Actual stdin/stdout pairs for Judge0 execution
+- **Starter code**: Language-specific function signatures (not generic comments)
 
-```text
-/curriculum/arrays              -- Topic overview (What/Why) + starts at Beginner
-/curriculum/arrays/beginner     -- Beginner theory + code + problems + AI Quiz
-/curriculum/arrays/intermediate -- Intermediate theory + code + problems + AI Quiz
-/curriculum/arrays/advanced     -- Advanced theory + code + problems + AI Quiz + Complexity table
+## Approach
+
+### Option A: Update `mkProblem` to accept optional overrides (recommended)
+Modify the helper to accept an optional config object for examples, constraints, test cases, and starter code. Then update each problem call with real data.
+
+### What changes
+
+**File: `src/data/curriculum.ts`**
+
+1. Update the `mkProblem` function signature to accept an optional extras parameter:
+```typescript
+function mkProblem(
+  id: string, title: string, difficulty: Difficulty, desc: string,
+  extras?: Partial<Pick<Problem, 'examples' | 'constraints' | 'testCases' | 'starterCode'>>
+): Problem {
+  return {
+    id, title, difficulty, description: desc,
+    examples: extras?.examples || [{ input: 'See description', output: 'See description' }],
+    constraints: extras?.constraints || ['See description'],
+    testCases: extras?.testCases || [{ input: 'sample', expectedOutput: 'sample' }],
+    starterCode: extras?.starterCode || {
+      python: `# ${title}\npass`,
+      java: `// ${title}\npublic class Solution {\n}`,
+      cpp: `// ${title}\n#include <bits/stdc++.h>\nusing namespace std;\n`,
+    },
+  };
+}
 ```
 
-The user lands on the overview page first, then clicks "Start Learning" to enter the Beginner level. Each level page has:
-
-```text
-Level Page (e.g., Beginner)
-|
-|-- Level header with progress indicator (Step 1 of 3)
-|-- Theory explanation
-|-- Code examples (Python / Java / C++ selector)
-|-- Practice problems (filtered by difficulty)
-|-- AI Quiz Section (3-5 MCQ questions generated from the theory)
-|-- Navigation: <- Previous Level | Next Level ->
-```
-
-## File Changes
-
-### 1. New Route: `src/App.tsx`
-- Add route: `/curriculum/:topicId/:level` pointing to a new `TheoryLevelPage` component
-- Keep `/curriculum/:topicId` as the topic overview page
-
-### 2. Refactor: `src/pages/TheoryPage.tsx`
-- Remove the three LevelSection accordions
-- Keep only: Header, What is it?, Why use it?, and a "Start Learning" button that navigates to `/curriculum/{topicId}/beginner`
-- Add a level progress indicator showing Beginner / Intermediate / Advanced as clickable steps
-
-### 3. New Page: `src/pages/TheoryLevelPage.tsx`
-This is the main new component. It renders one level at a time:
-
-- **Header**: Level badge (green/amber/red), title, step indicator (1/3, 2/3, 3/3)
-- **Theory Content**: The level's theory text with whitespace formatting
-- **Code Examples**: Language selector + code block (same as current)
-- **Practice Problems**: Filtered by difficulty (easy/medium/hard)
-- **AI Quiz Section**: A "Generate Quiz" button that calls an edge function to create 3-5 MCQ questions based on the theory content. Shows questions with radio button options, a submit button, and score feedback.
-- **Navigation Footer**:
-  - Beginner: "Back to Overview" on left, "Next: Intermediate ->" on right
-  - Intermediate: "<- Previous: Beginner" on left, "Next: Advanced ->" on right  
-  - Advanced: "<- Previous: Intermediate" on left, "Complete Topic" on right (marks complete + shows complexity table)
-
-### 4. New Edge Function: `supabase/functions/generate-quiz/index.ts`
-- Receives: `{ topicTitle, level, theoryContent, language }` 
-- Uses Lovable AI (gemini-3-flash-preview) to generate 3-5 MCQ questions
-- Returns structured JSON via tool calling:
-  ```json
+2. Update each problem with real data. For example, the "Two Sum" problem becomes:
+```typescript
+mkProblem('two-sum', 'Two Sum', 'easy',
+  'Given an array and target, return indices of two numbers that add up to target.',
   {
-    "questions": [
-      {
-        "question": "What is the time complexity of accessing an array element by index?",
-        "options": ["O(1)", "O(n)", "O(log n)", "O(n^2)"],
-        "correctIndex": 0,
-        "explanation": "Array access by index is O(1) because..."
-      }
-    ]
+    examples: [
+      { input: 'nums = [2,7,11,15], target = 9', output: '[0, 1]', explanation: 'nums[0] + nums[1] = 2 + 7 = 9' },
+      { input: 'nums = [3,2,4], target = 6', output: '[1, 2]' },
+    ],
+    constraints: [
+      '2 <= nums.length <= 10^4',
+      '-10^9 <= nums[i] <= 10^9',
+      'Exactly one valid answer exists',
+    ],
+    testCases: [
+      { input: '4\n2 7 11 15\n9', expectedOutput: '0 1' },
+      { input: '3\n3 2 4\n6', expectedOutput: '1 2' },
+    ],
+    starterCode: {
+      python: 'def two_sum(nums, target):\n    # Your solution here\n    pass',
+      java: 'public int[] twoSum(int[] nums, int target) {\n    // Your solution here\n    return new int[]{};\n}',
+      cpp: 'vector<int> twoSum(vector<int>& nums, int target) {\n    // Your solution here\n    return {};\n}',
+    },
   }
-  ```
-- Uses tool calling (not raw JSON) to ensure structured output
-- Handles 429/402 rate limit errors gracefully
-
-### 5. New Component: `src/components/LevelQuiz.tsx`
-- Takes `topicId`, `level`, `theoryContent` as props
-- "Generate Quiz" button triggers the edge function call
-- Displays questions as cards with radio button options
-- Submit button checks answers and shows score (e.g., "4/5 correct!")
-- Shows explanations for wrong answers after submission
-- "Regenerate Quiz" button to get fresh questions
-- Loading state with skeleton cards while quiz generates
-
-### 6. Styles: `src/index.css`
-- Add quiz-specific styles: correct/incorrect answer highlighting (green/red borders)
-- Navigation arrow hover effects
-
-## Technical Details
-
-### Quiz Generation Edge Function
-
-The edge function sends the theory content to the AI with a system prompt like:
-```
-You are a quiz generator for a DSA learning platform. Generate exactly {count} multiple-choice questions based on the provided theory content. Each question should test understanding of the concepts explained, not just memorization. Match the difficulty to the level (beginner = conceptual, intermediate = application, advanced = analysis/optimization).
+)
 ```
 
-It uses tool calling to guarantee structured output:
-```typescript
-body.tools = [{
-  type: "function",
-  function: {
-    name: "generate_quiz",
-    parameters: {
-      type: "object",
-      properties: {
-        questions: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              question: { type: "string" },
-              options: { type: "array", items: { type: "string" } },
-              correctIndex: { type: "integer" },
-              explanation: { type: "string" }
-            }
-          }
-        }
-      }
-    }
-  }
-}];
-body.tool_choice = { type: "function", function: { name: "generate_quiz" } };
-```
+3. Populate real examples, constraints, test cases, and starter code for all ~50 problems across every topic (Arrays, Sorting, Strings, Trees, Graphs, DP, etc.)
 
-### Navigation Logic
+### No changes needed to:
+- `src/pages/PracticePage.tsx` (already renders examples/constraints correctly)
+- Any other component files
+- Database schema
 
-The level pages use URL params to determine the current level and calculate previous/next:
-```typescript
-const LEVELS = ['beginner', 'intermediate', 'advanced'];
-const currentIndex = LEVELS.indexOf(level);
-const prevLevel = currentIndex > 0 ? LEVELS[currentIndex - 1] : null;
-const nextLevel = currentIndex < 2 ? LEVELS[currentIndex + 1] : null;
-```
-
-### Level Progress Indicator
-
-A horizontal stepper at the top of each level page:
-```text
-[1 Beginner] ---- [2 Intermediate] ---- [3 Advanced]
-    (active)         (upcoming)            (upcoming)
-```
-Completed levels get a checkmark, current level is highlighted with the topic's accent color.
-
+This is purely a content/data update in the curriculum file.
