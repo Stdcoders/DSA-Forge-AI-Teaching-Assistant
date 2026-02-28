@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import Editor from '@monaco-editor/react';
+import DryRunPanel, { type DryRunStep } from '@/components/DryRunPanel';
 
 const JUDGE0_URL = 'https://ce.judge0.com';
 
@@ -27,7 +28,9 @@ export default function PracticePage() {
   const [results, setResults] = useState<{ input: string; expected: string; got: string; passed: boolean }[]>([]);
   const [aiFeedback, setAiFeedback] = useState('');
   const [loadingFeedback, setLoadingFeedback] = useState(false);
-  const [activeTab, setActiveTab] = useState<'results' | 'feedback'>('results');
+  const [activeTab, setActiveTab] = useState<'results' | 'feedback' | 'dryrun'>('results');
+  const [dryRunSteps, setDryRunSteps] = useState<DryRunStep[]>([]);
+  const [loadingDryRun, setLoadingDryRun] = useState(false);
 
   const selectedTopic = TOPICS.find(t => t.id === selectedTopicId) || TOPICS[0];
   const filteredProblems = selectedTopic.problems.filter(p =>
@@ -186,6 +189,35 @@ export default function PracticePage() {
     setLoadingFeedback(false);
   };
 
+  const handleDryRun = async () => {
+    if (!code.trim()) return;
+    setLoadingDryRun(true);
+    setDryRunSteps([]);
+    setActiveTab('dryrun');
+    try {
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/dry-run-explain`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ code, language }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json();
+        toast.error(err.error || 'Dry run failed');
+        setLoadingDryRun(false);
+        return;
+      }
+      const data = await resp.json();
+      setDryRunSteps(data.steps || []);
+    } catch {
+      toast.error('Failed to generate dry run');
+    }
+    setLoadingDryRun(false);
+  };
+
   return (
     <div className="h-[calc(100vh-0px)] flex flex-col">
       {/* Top bar */}
@@ -322,42 +354,58 @@ export default function PracticePage() {
                 <Button variant="outline" onClick={handleAIFeedback} disabled={loadingFeedback}>
                   🤖 {loadingFeedback ? 'Analyzing...' : 'AI Feedback'}
                 </Button>
+                <Button variant="outline" onClick={handleDryRun} disabled={loadingDryRun}>
+                  🔍 {loadingDryRun ? 'Generating...' : 'Dry Run'}
+                </Button>
               </div>
 
               {/* Results Panel */}
-              {(results.length > 0 || aiFeedback) && (
-                <div className="border-t border-border flex-shrink-0 max-h-56 overflow-y-auto"
+              {(results.length > 0 || aiFeedback || dryRunSteps.length > 0 || loadingDryRun) && (
+                <div className="border-t border-border flex-shrink-0 max-h-[400px] overflow-hidden flex flex-col"
                   style={{ background: 'hsl(var(--muted))' }}>
-                  <div className="flex gap-1 px-4 pt-3">
-                    {(['results', 'feedback'] as const).map(tab => (
+                  <div className="flex gap-1 px-4 pt-3 flex-shrink-0">
+                    {(['results', 'feedback', 'dryrun'] as const).map(tab => (
                       <button key={tab} onClick={() => setActiveTab(tab)}
                         className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                           activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
                         }`}>
-                        {tab === 'results' ? `Test Results (${results.filter(r => r.passed).length}/${results.length})` : 'AI Feedback'}
+                        {tab === 'results' ? `Test Results (${results.filter(r => r.passed).length}/${results.length})`
+                          : tab === 'feedback' ? 'AI Feedback'
+                          : '🔍 Dry Run'}
                       </button>
                     ))}
                   </div>
-                  <div className="p-4">
-                    {activeTab === 'results' && results.map((r, i) => (
-                      <div key={i} className={`flex items-start gap-3 p-2 rounded-lg mb-2 ${r.passed ? 'bg-dsa-green/10' : 'bg-destructive/10'}`}>
-                        <span className={r.passed ? 'verdict-accepted' : 'verdict-wrong'}>
-                          {r.passed ? '✓' : '✗'}
-                        </span>
-                        <div className="text-xs font-mono">
-                          <div>Expected: <span className="text-dsa-green">{r.expected}</span></div>
-                          {!r.passed && <div>Got: <span className="text-destructive">{r.got || 'No output'}</span></div>}
-                        </div>
+                  <div className="flex-1 overflow-y-auto">
+                    {activeTab === 'results' && (
+                      <div className="p-4">
+                        {results.map((r, i) => (
+                          <div key={i} className={`flex items-start gap-3 p-2 rounded-lg mb-2 ${r.passed ? 'bg-dsa-green/10' : 'bg-destructive/10'}`}>
+                            <span className={r.passed ? 'verdict-accepted' : 'verdict-wrong'}>
+                              {r.passed ? '✓' : '✗'}
+                            </span>
+                            <div className="text-xs font-mono">
+                              <div>Expected: <span className="text-dsa-green">{r.expected}</span></div>
+                              {!r.passed && <div>Got: <span className="text-destructive">{r.got || 'No output'}</span></div>}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                     {activeTab === 'feedback' && (
-                      <div className="prose-dark text-sm leading-relaxed whitespace-pre-wrap">
+                      <div className="p-4 prose-dark text-sm leading-relaxed whitespace-pre-wrap">
                         {loadingFeedback && !aiFeedback ? (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <span className="ai-pulse">●</span> Analyzing your code...
                           </div>
                         ) : aiFeedback}
                       </div>
+                    )}
+                    {activeTab === 'dryrun' && (
+                      <DryRunPanel
+                        steps={dryRunSteps}
+                        isLoading={loadingDryRun}
+                        codeLines={code.split('\n')}
+                      />
                     )}
                   </div>
                 </div>
