@@ -17,6 +17,7 @@ interface DryRunPanelProps {
   codeLines: string[];
   error?: string;
   onRetry?: () => void;
+  isOfflineDemo?: boolean;
 }
 
 const HIGHLIGHT_COLORS: Record<string, { border: string; bg: string; badge: string; label: string }> = {
@@ -142,7 +143,7 @@ function ErrorState({ error, onRetry }: { error: string; onRetry?: () => void })
 }
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
-export default function DryRunPanel({ steps, isLoading, codeLines, error, onRetry }: DryRunPanelProps) {
+export default function DryRunPanel({ steps, isLoading, codeLines, error, onRetry, isOfflineDemo }: DryRunPanelProps) {
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speedIdx, setSpeedIdx] = useState(1); // default 1×
@@ -190,6 +191,19 @@ export default function DryRunPanel({ steps, isLoading, codeLines, error, onRetr
 
   return (
     <div className="flex flex-col gap-0 h-full overflow-hidden">
+
+      {/* ── Offline demo banner ── */}
+      {isOfflineDemo && (
+        <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] font-medium bg-amber-500/10 text-amber-400 border-b border-amber-500/20 flex-shrink-0">
+          <span>📡</span>
+          <span>Offline demo — results may not match your code</span>
+          {onRetry && (
+            <button onClick={onRetry} className="ml-auto underline hover:text-amber-300 transition-colors">
+              Retry
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Progress bar ── */}
       <div className="h-1 bg-muted flex-shrink-0">

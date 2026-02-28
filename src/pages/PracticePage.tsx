@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import Editor from '@monaco-editor/react';
 import DryRunPanel, { type DryRunStep } from '@/components/DryRunPanel';
+import { generateLocalDryRun } from '@/data/sampleDryRuns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const JUDGE0_URL = 'https://ce.judge0.com';
@@ -37,6 +38,7 @@ export default function PracticePage() {
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('output');
   const [dryRunSteps, setDryRunSteps] = useState<DryRunStep[]>([]);
+  const [isOfflineDemo, setIsOfflineDemo] = useState(false);
   const [loadingDryRun, setLoadingDryRun] = useState(false);
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
 
@@ -199,6 +201,7 @@ export default function PracticePage() {
     setLoadingDryRun(true);
     setDryRunSteps([]);
     setDryRunError('');
+    setIsOfflineDemo(false);
     setActiveTab('dryrun');
 
     const MAX_RETRIES = 4;
@@ -229,8 +232,10 @@ export default function PracticePage() {
         if (attempt < MAX_RETRIES) {
           await new Promise(r => setTimeout(r, 1000 * attempt));
         } else {
-          setDryRunError('Network error. Try refreshing the page or check your connection.');
-          toast.error('Failed to connect after multiple attempts');
+          const fallback = generateLocalDryRun(code);
+          setDryRunSteps(fallback);
+          setIsOfflineDemo(true);
+          toast('Using offline demo — connect to see your actual code traced', { icon: '📡' });
         }
       } finally {
         clearTimeout(timeoutId);
@@ -486,6 +491,7 @@ export default function PracticePage() {
                   codeLines={code.split('\n')}
                   error={dryRunError}
                   onRetry={handleDryRun}
+                  isOfflineDemo={isOfflineDemo}
                 />
               ) : (
                 <div className="p-4">

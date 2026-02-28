@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import Editor from '@monaco-editor/react';
 import DryRunPanel, { type DryRunStep } from '@/components/DryRunPanel';
+import { generateLocalDryRun } from '@/data/sampleDryRuns';
 
 const JUDGE0_URL = 'https://ce.judge0.com';
 
@@ -93,12 +94,14 @@ export default function CodeEditorPage() {
   };
 
   const [dryRunError, setDryRunError] = useState('');
+  const [isOfflineDemo, setIsOfflineDemo] = useState(false);
 
   const handleDryRun = async () => {
     if (!code.trim()) return;
     setLoadingDryRun(true);
     setDryRunSteps([]);
     setDryRunError('');
+    setIsOfflineDemo(false);
     setActivePanel('dryrun');
 
     const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -139,8 +142,10 @@ export default function CodeEditorPage() {
         if (attempt < MAX_RETRIES) {
           await new Promise(r => setTimeout(r, 1000 * attempt));
         } else {
-          setDryRunError('Network error. Try refreshing the page or check your connection.');
-          toast.error('Failed to connect after multiple attempts');
+          const fallback = generateLocalDryRun(code);
+          setDryRunSteps(fallback);
+          setIsOfflineDemo(true);
+          toast('Using offline demo — connect to see your actual code traced', { icon: '📡' });
         }
       } finally {
         clearTimeout(timeoutId);
@@ -252,6 +257,7 @@ export default function CodeEditorPage() {
                 codeLines={codeLines}
                 error={dryRunError}
                 onRetry={handleDryRun}
+                isOfflineDemo={isOfflineDemo}
               />
             </div>
           )}
