@@ -275,7 +275,13 @@ export default function PracticePage() {
           ))}
         </div>
 
-        <button onClick={() => setLeftPanelOpen(v => !v)}
+        <button onClick={() => {
+            const panel = (window as any).__practiceLeftPanel;
+            if (panel) {
+              if (leftPanelOpen) panel.collapse();
+              else panel.expand();
+            }
+          }}
           className="px-2 py-1 rounded text-xs bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
           {leftPanelOpen ? <><PanelLeftClose className="w-3 h-3" /> Hide</> : <><PanelLeft className="w-3 h-3" /> Problems</>}
         </button>
@@ -308,10 +314,21 @@ export default function PracticePage() {
 
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* Left Panel — Problem List + Description */}
-        {leftPanelOpen && (
-          <>
-            <ResizablePanel defaultSize={22} minSize={15} maxSize={40}>
-              <div className="h-full flex flex-col overflow-hidden bg-card">
+        <ResizablePanel
+          defaultSize={22}
+          minSize={15}
+          maxSize={40}
+          collapsible
+          collapsedSize={0}
+          onCollapse={() => setLeftPanelOpen(false)}
+          onExpand={() => setLeftPanelOpen(true)}
+          ref={(panel) => {
+            if (panel) {
+              (window as any).__practiceLeftPanel = panel;
+            }
+          }}
+        >
+          <div className="h-full flex flex-col overflow-hidden bg-card">
                 {/* Problem list */}
                 <div className="border-b border-border max-h-48 overflow-y-auto flex-shrink-0">
                   {filteredProblems.map(problem => (
@@ -375,14 +392,12 @@ export default function PracticePage() {
                     </div>
                   </ScrollArea>
                 )}
-              </div>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-          </>
-        )}
+          </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
 
         {/* Center — Editor + stdin */}
-        <ResizablePanel defaultSize={leftPanelOpen ? 48 : 60} minSize={30}>
+        <ResizablePanel defaultSize={48} minSize={30}>
           <div className="h-full flex flex-col overflow-hidden">
             <div className="flex-1 overflow-hidden">
               <Editor
