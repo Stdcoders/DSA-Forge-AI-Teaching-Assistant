@@ -68,6 +68,12 @@ export default function AlgoArray({ arrayState, prevArrayState }: AlgoArrayProps
     return 'bg-card text-foreground/80 border-border/40';
   }
 
+  function getCellAnimation(i: number): string {
+    if (swappedIndices.includes(i)) return 'animate-cell-swap';
+    if (highlightIndices.includes(i)) return 'animate-cell-pulse';
+    return '';
+  }
+
   return (
     <div className="flex flex-col gap-2 select-none">
       {/* Key bubble */}
@@ -103,7 +109,7 @@ export default function AlgoArray({ arrayState, prevArrayState }: AlgoArrayProps
           {display.map((val, i) => (
             <div
               key={i}
-              className={`w-10 h-10 flex items-center justify-center text-sm font-mono font-bold border-r border-border/40 last:border-r-0 transition-all duration-400 ${getCellStyle(i)}`}
+              className={`w-10 h-10 flex items-center justify-center text-sm font-mono font-bold border-r border-border/40 last:border-r-0 transition-all duration-300 ${getCellStyle(i)} ${getCellAnimation(i)}`}
             >
               {String(val)}
             </div>

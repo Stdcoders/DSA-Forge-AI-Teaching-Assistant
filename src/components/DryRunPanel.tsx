@@ -159,7 +159,7 @@ export default function DryRunPanel({ steps, isLoading, codeLines }: DryRunPanel
 
       {/* ── Progress bar ── */}
       <div className="h-1 bg-muted flex-shrink-0">
-        <div className="h-full bg-primary transition-all duration-400 rounded-full"
+        <div className="h-full bg-primary transition-all duration-300 rounded-full"
           style={{ width: `${progress}%` }} />
       </div>
 
@@ -177,7 +177,7 @@ export default function DryRunPanel({ steps, isLoading, codeLines }: DryRunPanel
         )}
 
         {/* ── Concept badge + explanation ── */}
-        <div className={`rounded-xl border p-3 flex flex-col gap-2 flex-shrink-0 transition-all duration-300 ${hl.border} ${hl.bg}`}>
+        <div key={current} className={`rounded-xl border p-3 flex flex-col gap-2 flex-shrink-0 animate-fade-in transition-all duration-300 ${hl.border} ${hl.bg}`}>
           <div className="flex items-center gap-2 flex-wrap">
             {step?.conceptNote && (
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${hl.badge}`}>
