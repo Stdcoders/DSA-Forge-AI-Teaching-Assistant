@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import Editor from '@monaco-editor/react';
 import DryRunPanel, { type DryRunStep } from '@/components/DryRunPanel';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const JUDGE0_URL = 'https://ce.judge0.com';
 
@@ -37,6 +38,7 @@ export default function PracticePage() {
   const [activeTab, setActiveTab] = useState<TabType>('output');
   const [dryRunSteps, setDryRunSteps] = useState<DryRunStep[]>([]);
   const [loadingDryRun, setLoadingDryRun] = useState(false);
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
 
   const selectedTopic = TOPICS.find(t => t.id === selectedTopicId) || TOPICS[0];
   const filteredProblems = selectedTopic.problems.filter(p =>
@@ -82,7 +84,6 @@ export default function PracticePage() {
     }
   };
 
-  // Run with custom stdin
   const handleRun = async () => {
     if (!code.trim()) return;
     setRunning(true);
@@ -93,7 +94,6 @@ export default function PracticePage() {
     setRunning(false);
   };
 
-  // Submit against all test cases
   const handleSubmit = async () => {
     if (!selectedProblem || !user) return;
     setSubmitting(true);
@@ -228,10 +228,10 @@ export default function PracticePage() {
 
   return (
     <div className="h-[calc(100vh-0px)] flex flex-col">
-      {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border flex-shrink-0 bg-card">
+      {/* Top toolbar */}
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-border flex-shrink-0 bg-card flex-wrap">
         <Select value={selectedTopicId} onValueChange={setSelectedTopicId}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             {TOPICS.map(t => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}
           </SelectContent>
@@ -240,7 +240,7 @@ export default function PracticePage() {
         <div className="flex gap-1">
           {['all', 'easy', 'medium', 'hard'].map(d => (
             <button key={d} onClick={() => setDiffFilter(d)}
-              className={`px-3 py-1.5 rounded-lg text-xs capitalize transition-all ${
+              className={`px-2 py-1 rounded text-xs capitalize transition-all ${
                 diffFilter === d ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground bg-muted'
               }`}>
               {d}
@@ -248,8 +248,29 @@ export default function PracticePage() {
           ))}
         </div>
 
+        <button onClick={() => setLeftPanelOpen(v => !v)}
+          className="px-2 py-1 rounded text-xs bg-muted text-muted-foreground hover:text-foreground transition-colors">
+          {leftPanelOpen ? '◀ Hide' : '▶ Problems'}
+        </button>
+
+        <div className="flex-1" />
+
+        <Button onClick={handleRun} disabled={running} size="sm" className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+          {running ? '⏳ Running...' : '▶ Run Code'}
+        </Button>
+        <Button onClick={handleSubmit} disabled={submitting} size="sm" className="h-8 text-xs"
+          style={{ background: 'var(--gradient-cyan)', color: 'hsl(var(--primary-foreground))' }}>
+          {submitting ? '⏳ Submitting...' : '✓ Submit'}
+        </Button>
+        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleDryRun} disabled={loadingDryRun}>
+          🔍 {loadingDryRun ? 'Generating...' : 'Dry Run'}
+        </Button>
+        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleAIFeedback} disabled={loadingFeedback}>
+          🤖 {loadingFeedback ? 'Analyzing...' : 'AI Feedback'}
+        </Button>
+
         <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
-          <SelectTrigger className="w-32 ml-auto"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             {Object.entries(LANGUAGE_LABELS).map(([id, label]) => (
               <SelectItem key={id} value={id}>{label}</SelectItem>
@@ -259,225 +280,199 @@ export default function PracticePage() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Problem List Sidebar */}
-        <div className="w-48 border-r border-border flex-shrink-0 overflow-y-auto bg-sidebar">
-          {filteredProblems.map(problem => (
-            <button key={problem.id}
-              onClick={() => setSelectedProblem(problem)}
-              className={`w-full text-left p-3 border-b border-border transition-colors ${
-                selectedProblem?.id === problem.id ? 'bg-primary/10 border-l-2 border-l-primary' : 'hover:bg-muted'
-              }`}>
-              <div className={`text-xs px-1.5 py-0.5 rounded inline-block mb-1 ${
-                problem.difficulty === 'easy' ? 'badge-easy' :
-                problem.difficulty === 'medium' ? 'badge-medium' : 'badge-hard'
-              }`}>
-                {problem.difficulty}
-              </div>
-              <div className="text-sm font-medium leading-tight">{problem.title}</div>
-            </button>
-          ))}
-        </div>
-
-        {selectedProblem ? (
-          <div className="flex flex-1 overflow-hidden">
-            {/* Problem Description */}
-            <div className="w-72 border-r border-border overflow-y-auto flex-shrink-0 p-4 space-y-4 bg-card">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <h2 className="font-bold text-base">{selectedProblem.title}</h2>
-                  <span className={`text-xs px-2 py-0.5 rounded border ${
-                    selectedProblem.difficulty === 'easy' ? 'badge-easy' :
-                    selectedProblem.difficulty === 'medium' ? 'badge-medium' : 'badge-hard'
-                  }`}>{selectedProblem.difficulty}</span>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">{selectedProblem.description}</p>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">Examples</h3>
-                {selectedProblem.examples.map((ex, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-muted text-xs font-mono space-y-1">
-                    <div><span className="text-muted-foreground">Input: </span>{ex.input}</div>
-                    <div><span className="text-muted-foreground">Output: </span>{ex.output}</div>
-                    {ex.explanation && <div className="text-muted-foreground">{ex.explanation}</div>}
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold mb-2">Constraints</h3>
-                <ul className="space-y-1">
-                  {selectedProblem.constraints.map((c, i) => (
-                    <li key={i} className="text-xs text-muted-foreground font-mono">• {c}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <button onClick={() => navigate(`/curriculum/${selectedTopicId}`)}
-                className="text-xs text-primary hover:underline">
-                ← View Theory
-              </button>
-            </div>
-
-            {/* Editor + stdin + buttons (center) */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Monaco Editor */}
-              <div className="flex-1 overflow-hidden">
-                <Editor
-                  height="100%"
-                  language={language === 'cpp' ? 'cpp' : language}
-                  value={code}
-                  onChange={v => setCode(v || '')}
-                  theme="vs-dark"
-                  options={{
-                    fontSize: 14,
-                    fontFamily: 'JetBrains Mono, Fira Code, monospace',
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    padding: { top: 16 },
-                  }}
-                />
-              </div>
-
-              {/* Stdin input */}
-              <div className="border-t border-border bg-card p-3 flex-shrink-0">
-                <label className="text-xs text-muted-foreground mb-1 block">Standard Input (stdin)</label>
-                <Textarea
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  placeholder="Enter input here..."
-                  className="font-mono text-xs h-16 resize-none bg-muted border-border"
-                />
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-2 px-4 py-3 border-t border-border flex-shrink-0 bg-card">
-                <Button onClick={handleRun} disabled={running} size="sm"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  {running ? '⏳ Running...' : '▶ Run Code'}
-                </Button>
-                <Button onClick={handleSubmit} disabled={submitting} size="sm"
-                  style={{ background: 'var(--gradient-cyan)', color: 'hsl(var(--primary-foreground))' }}>
-                  {submitting ? '⏳ Submitting...' : '✓ Submit'}
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleDryRun} disabled={loadingDryRun}>
-                  🔍 {loadingDryRun ? 'Generating...' : 'Dry Run'}
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleAIFeedback} disabled={loadingFeedback}>
-                  🤖 {loadingFeedback ? 'Analyzing...' : 'AI Feedback'}
-                </Button>
-              </div>
-            </div>
-
-            {/* Right Panel — Output / Test Results / AI Feedback / Dry Run */}
-            <div className="w-96 border-l border-border flex-shrink-0 flex flex-col overflow-hidden bg-card">
-              {/* Tabs */}
-              <div className="flex gap-1 px-3 pt-3 pb-2 border-b border-border flex-shrink-0 flex-wrap">
-                {(['output', 'results', 'feedback', 'dryrun'] as TabType[]).map(tab => (
-                  <button key={tab} onClick={() => setActiveTab(tab)}
-                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                      activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground bg-muted'
+        {/* Left Panel — Problem List + Description */}
+        {leftPanelOpen && (
+          <div className="w-80 border-r border-border flex-shrink-0 flex flex-col overflow-hidden bg-card">
+            {/* Problem list */}
+            <div className="border-b border-border max-h-48 overflow-y-auto flex-shrink-0">
+              {filteredProblems.map(problem => (
+                <button key={problem.id}
+                  onClick={() => setSelectedProblem(problem)}
+                  className={`w-full text-left px-3 py-2 border-b border-border/50 transition-colors ${
+                    selectedProblem?.id === problem.id ? 'bg-primary/10 border-l-2 border-l-primary' : 'hover:bg-muted'
+                  }`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      problem.difficulty === 'easy' ? 'badge-easy' :
+                      problem.difficulty === 'medium' ? 'badge-medium' : 'badge-hard'
                     }`}>
-                    {TAB_LABELS[tab]}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tab Content */}
-              <div className="flex-1 overflow-y-auto">
-                {/* Output tab */}
-                {activeTab === 'output' && (
-                  <div className="p-4">
-                    {output ? (
-                      <pre className="text-sm font-mono whitespace-pre-wrap text-foreground bg-muted rounded-lg p-3">{output}</pre>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Click "▶ Run Code" to execute your code with the stdin input.</p>
-                    )}
+                      {problem.difficulty}
+                    </span>
+                    <span className="text-xs font-medium leading-tight truncate">{problem.title}</span>
                   </div>
-                )}
-
-                {/* Test Results tab */}
-                {activeTab === 'results' && (
-                  <div className="p-4 space-y-3">
-                    {testResults.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">Click "✓ Submit" to run your code against all test cases.</p>
-                    ) : (
-                      <>
-                        {/* Summary */}
-                        <div className={`p-3 rounded-lg text-sm font-semibold ${
-                          testResults.every(r => r.passed)
-                            ? 'bg-dsa-green/10 text-dsa-green'
-                            : 'bg-destructive/10 text-destructive'
-                        }`}>
-                          {testResults.every(r => r.passed)
-                            ? `✅ Accepted — All ${testResults.length} test cases passed!`
-                            : `❌ Wrong Answer — ${testResults.filter(r => r.passed).length}/${testResults.length} passed`}
-                        </div>
-
-                        {/* Individual test cases */}
-                        {testResults.map((r, i) => (
-                          <div key={i} className={`rounded-lg border p-3 space-y-2 ${
-                            r.passed ? 'border-dsa-green/30 bg-dsa-green/5' : 'border-destructive/30 bg-destructive/5'
-                          }`}>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                                r.passed ? 'bg-dsa-green/20 text-dsa-green' : 'bg-destructive/20 text-destructive'
-                              }`}>
-                                {r.passed ? '✓ PASS' : '✗ FAIL'}
-                              </span>
-                              <span className="text-xs text-muted-foreground">Test Case {i + 1}</span>
-                            </div>
-                            <div className="text-xs font-mono space-y-1">
-                              <div><span className="text-muted-foreground">Input: </span><span className="text-foreground">{r.input}</span></div>
-                              <div><span className="text-muted-foreground">Expected: </span><span className="text-dsa-green">{r.expected}</span></div>
-                              {!r.passed && (
-                                <div><span className="text-muted-foreground">Got: </span><span className="text-destructive">{r.got || 'No output'}</span></div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* AI Feedback tab */}
-                {activeTab === 'feedback' && (
-                  <div className="p-4 prose-dark text-sm leading-relaxed whitespace-pre-wrap">
-                    {loadingFeedback && !aiFeedback ? (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <span className="ai-pulse">●</span> Analyzing your code...
-                      </div>
-                    ) : aiFeedback ? (
-                      aiFeedback
-                    ) : (
-                      <p className="text-muted-foreground">Click "🤖 AI Feedback" to get analysis of your code.</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Dry Run tab */}
-                {activeTab === 'dryrun' && (
-                  dryRunSteps.length > 0 || loadingDryRun ? (
-                    <DryRunPanel
-                      steps={dryRunSteps}
-                      isLoading={loadingDryRun}
-                      codeLines={code.split('\n')}
-                    />
-                  ) : (
-                    <div className="p-4">
-                      <p className="text-sm text-muted-foreground">Click "🔍 Dry Run" to see a step-by-step execution trace of your code.</p>
-                    </div>
-                  )
-                )}
-              </div>
+                </button>
+              ))}
             </div>
-          </div>
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            Select a problem to start practicing
+
+            {/* Problem description */}
+            {selectedProblem && (
+              <ScrollArea className="flex-1">
+                <div className="p-4 space-y-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h2 className="font-bold text-sm">{selectedProblem.title}</h2>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                        selectedProblem.difficulty === 'easy' ? 'badge-easy' :
+                        selectedProblem.difficulty === 'medium' ? 'badge-medium' : 'badge-hard'
+                      }`}>{selectedProblem.difficulty}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{selectedProblem.description}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold">Examples</h3>
+                    {selectedProblem.examples.map((ex, i) => (
+                      <div key={i} className="p-2 rounded-lg bg-muted text-[11px] font-mono space-y-0.5">
+                        <div><span className="text-muted-foreground">Input: </span>{ex.input}</div>
+                        <div><span className="text-muted-foreground">Output: </span>{ex.output}</div>
+                        {ex.explanation && <div className="text-muted-foreground">{ex.explanation}</div>}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <h3 className="text-xs font-semibold mb-1">Constraints</h3>
+                    <ul className="space-y-0.5">
+                      {selectedProblem.constraints.map((c, i) => (
+                        <li key={i} className="text-[11px] text-muted-foreground font-mono">• {c}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button onClick={() => navigate(`/curriculum/${selectedTopicId}`)}
+                    className="text-xs text-primary hover:underline">
+                    ← View Theory
+                  </button>
+                </div>
+              </ScrollArea>
+            )}
           </div>
         )}
+
+        {/* Center — Editor + stdin */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="flex-1 overflow-hidden">
+            <Editor
+              height="100%"
+              language={language === 'cpp' ? 'cpp' : language}
+              value={code}
+              onChange={v => setCode(v || '')}
+              theme="vs-dark"
+              options={{
+                fontSize: 14,
+                fontFamily: 'JetBrains Mono, Fira Code, monospace',
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                padding: { top: 16 },
+              }}
+            />
+          </div>
+
+          <div className="border-t border-border bg-card p-2 flex-shrink-0">
+            <label className="text-[10px] text-muted-foreground mb-1 block">Standard Input (stdin)</label>
+            <Textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Enter input here..."
+              className="font-mono text-xs h-14 resize-none bg-muted border-border"
+            />
+          </div>
+        </div>
+
+        {/* Right Panel — Tabs */}
+        <div className="w-96 border-l border-border flex-shrink-0 flex flex-col overflow-hidden bg-card">
+          <div className="flex gap-1 px-3 pt-2 pb-2 border-b border-border flex-shrink-0 flex-wrap">
+            {(['output', 'results', 'feedback', 'dryrun'] as TabType[]).map(tab => (
+              <button key={tab} onClick={() => setActiveTab(tab)}
+                className={`px-2 py-1 text-[11px] rounded transition-colors ${
+                  activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground bg-muted'
+                }`}>
+                {TAB_LABELS[tab]}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {activeTab === 'output' && (
+              <div className="p-4">
+                {output ? (
+                  <pre className="text-sm font-mono whitespace-pre-wrap text-foreground bg-muted rounded-lg p-3">{output}</pre>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Click "▶ Run Code" to execute your code with the stdin input.</p>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'results' && (
+              <div className="p-4 space-y-3">
+                {testResults.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Click "✓ Submit" to run your code against all test cases.</p>
+                ) : (
+                  <>
+                    <div className={`p-3 rounded-lg text-sm font-semibold ${
+                      testResults.every(r => r.passed)
+                        ? 'bg-dsa-green/10 text-dsa-green'
+                        : 'bg-destructive/10 text-destructive'
+                    }`}>
+                      {testResults.every(r => r.passed)
+                        ? `✅ Accepted — All ${testResults.length} test cases passed!`
+                        : `❌ Wrong Answer — ${testResults.filter(r => r.passed).length}/${testResults.length} passed`}
+                    </div>
+                    {testResults.map((r, i) => (
+                      <div key={i} className={`rounded-lg border p-3 space-y-2 ${
+                        r.passed ? 'border-dsa-green/30 bg-dsa-green/5' : 'border-destructive/30 bg-destructive/5'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                            r.passed ? 'bg-dsa-green/20 text-dsa-green' : 'bg-destructive/20 text-destructive'
+                          }`}>
+                            {r.passed ? '✓ PASS' : '✗ FAIL'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">Test Case {i + 1}</span>
+                        </div>
+                        <div className="text-xs font-mono space-y-1">
+                          <div><span className="text-muted-foreground">Input: </span><span className="text-foreground">{r.input}</span></div>
+                          <div><span className="text-muted-foreground">Expected: </span><span className="text-dsa-green">{r.expected}</span></div>
+                          {!r.passed && (
+                            <div><span className="text-muted-foreground">Got: </span><span className="text-destructive">{r.got || 'No output'}</span></div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'feedback' && (
+              <div className="p-4 prose-dark text-sm leading-relaxed whitespace-pre-wrap">
+                {loadingFeedback && !aiFeedback ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="ai-pulse">●</span> Analyzing your code...
+                  </div>
+                ) : aiFeedback ? (
+                  aiFeedback
+                ) : (
+                  <p className="text-muted-foreground">Click "🤖 AI Feedback" to get analysis of your code.</p>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'dryrun' && (
+              dryRunSteps.length > 0 || loadingDryRun ? (
+                <DryRunPanel
+                  steps={dryRunSteps}
+                  isLoading={loadingDryRun}
+                  codeLines={code.split('\n')}
+                />
+              ) : (
+                <div className="p-4">
+                  <p className="text-sm text-muted-foreground">Click "🔍 Dry Run" to see a step-by-step execution trace of your code.</p>
+                </div>
+              )
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
