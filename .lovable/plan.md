@@ -1,29 +1,38 @@
 
 
-# Make Dry Run Work Offline with Local Fallback
+# Redesign Code Editor with Resizable Panels
 
-## Root Cause (confirmed)
-The backend function `dry-run-explain` returns 200 with correct data when called directly. **Every** request from the preview iframe is failing — auth refreshes, dry-run calls, everything. This is a transient preview environment networking issue that no amount of retry logic can fix.
+Redesign the Code Editor page to match the reference image: a clean layout with a resizable split between the editor and the output/dry-run panel, using a draggable handle (slider).
 
-## Solution: Add a local fallback with sample dry-run traces
-When all network retries fail, instead of showing "Connection Failed", generate a local dry-run trace so users can always see the animation feature working.
+## Changes
 
-### Changes
+### `src/pages/CodeEditorPage.tsx` — Full layout redesign
 
-#### 1. `src/data/sampleDryRuns.ts` — New file with sample traces
-- Create pre-built dry-run step arrays for common algorithms (bubble sort, binary search)
-- Include full `arrayState` with highlights, swaps, sorted indices, and pointers
-- A function `generateLocalDryRun(code)` that pattern-matches the code to pick a relevant sample, or falls back to a generic trace
+1. **Replace fixed `flex` split with `ResizablePanelGroup`** from `react-resizable-panels` (already installed and has a UI component at `src/components/ui/resizable.tsx`)
+   - Horizontal split: left panel = code editor, right panel = Output + AI Dry Run (stacked vertically)
+   - Use `ResizableHandle` with `withHandle` for a visible drag grip
 
-#### 2. `src/pages/CodeEditorPage.tsx` — Use fallback on network failure
-- After all retries fail, call `generateLocalDryRun(code)` instead of showing an error
-- Show a toast: "Using offline demo — connect to see your actual code traced"
-- Set the steps from the local fallback so animations play immediately
+2. **Right panel: vertical `ResizablePanelGroup`** splitting Output (top) and AI Dry Run (bottom) with another resizable handle between them — matching the reference image layout
 
-#### 3. `src/pages/PracticePage.tsx` — Same fallback
-- Match the same fallback behavior as CodeEditorPage
+3. **Toolbar redesign** to match reference:
+   - Left: `</>` icon + "DSA AI Code Studio" title
+   - Right: Language select, green "Run Code" button, "Dry Run" button, keyboard shortcut hint `Ctrl+Enter to run`
+   - Remove the current separate tab switcher; Output and Dry Run are always visible as stacked panels
 
-#### 4. `src/components/DryRunPanel.tsx` — Add "offline demo" indicator
-- When steps come from local fallback, show a small banner: "Offline demo — results may not match your code"
-- Keep the Retry button so users can try the real service when network recovers
+4. **Remove stdin area** from below editor (simplify to match reference) — or collapse it into a small expandable section
+
+5. **Remove tab switching** between Output and Dry Run — both panels are visible simultaneously in the right column, separated by a resizable handle
+
+### Layout structure:
+```text
+┌─────────────────────────────────────────────────┐
+│  </> DSA AI Code Studio  [Java ▼] [Run] [Dry]  │
+├────────────────────┬──┬─────────────────────────┤
+│                    │  │ Output                  │
+│   Monaco Editor    │◂▸│ "Click Run Code..."     │
+│                    │  ├─────────────────────────┤
+│                    │  │ AI Dry Run              │
+│                    │  │ "Click Dry Run..."      │
+└────────────────────┴──┴─────────────────────────┘
+```
 
