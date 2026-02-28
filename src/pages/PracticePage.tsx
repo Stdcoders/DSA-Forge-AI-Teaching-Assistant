@@ -5,11 +5,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { TOPICS, LANGUAGE_IDS, LANGUAGE_LABELS, type Language, type Problem } from '@/data/curriculum';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import Editor from '@monaco-editor/react';
 import DryRunPanel, { type DryRunStep } from '@/components/DryRunPanel';
 
 const JUDGE0_URL = 'https://ce.judge0.com';
+
+type TabType = 'output' | 'results' | 'feedback' | 'dryrun';
 
 export default function PracticePage() {
   const [searchParams] = useSearchParams();
@@ -24,11 +27,14 @@ export default function PracticePage() {
   const [diffFilter, setDiffFilter] = useState<string>('all');
   const [language, setLanguage] = useState<Language>(preferredLang);
   const [code, setCode] = useState('');
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState('');
   const [running, setRunning] = useState(false);
-  const [results, setResults] = useState<{ input: string; expected: string; got: string; passed: boolean }[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [testResults, setTestResults] = useState<{ input: string; expected: string; got: string; passed: boolean }[]>([]);
   const [aiFeedback, setAiFeedback] = useState('');
   const [loadingFeedback, setLoadingFeedback] = useState(false);
-  const [activeTab, setActiveTab] = useState<'results' | 'feedback' | 'dryrun'>('results');
+  const [activeTab, setActiveTab] = useState<TabType>('output');
   const [dryRunSteps, setDryRunSteps] = useState<DryRunStep[]>([]);
   const [loadingDryRun, setLoadingDryRun] = useState(false);
 
@@ -50,43 +56,51 @@ export default function PracticePage() {
   useEffect(() => {
     if (selectedProblem) {
       setCode(selectedProblem.starterCode[language]);
-      setResults([]);
+      setTestResults([]);
+      setOutput('');
       setAiFeedback('');
+      setDryRunSteps([]);
     }
   }, [language, selectedProblem]);
 
-  const runOnJudge0 = async (code: string, input: string): Promise<string> => {
+  const runOnJudge0 = async (sourceCode: string, stdin: string): Promise<string> => {
     try {
-      const submitRes = await fetch(`${JUDGE0_URL}/submissions?base64_encoded=false&wait=true`, {
+      const res = await fetch(`${JUDGE0_URL}/submissions?base64_encoded=false&wait=true`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source_code: code,
+          source_code: sourceCode,
           language_id: LANGUAGE_IDS[language],
-          stdin: input,
+          stdin,
         }),
       });
-
-      if (!submitRes.ok) {
-        // Fallback: simulate output for demo
-        return 'Execution service unavailable. Please try the Code Editor page.';
-      }
-
-      const data = await submitRes.json();
+      if (!res.ok) return 'Execution service unavailable.';
+      const data = await res.json();
       return data.stdout || data.stderr || data.compile_output || 'No output';
     } catch {
-      return 'Judge0 unavailable. Using simulation mode.';
+      return 'Judge0 unavailable.';
     }
   };
 
+  // Run with custom stdin
+  const handleRun = async () => {
+    if (!code.trim()) return;
+    setRunning(true);
+    setActiveTab('output');
+    setOutput('Running...');
+    const result = await runOnJudge0(code, input);
+    setOutput(result);
+    setRunning(false);
+  };
+
+  // Submit against all test cases
   const handleSubmit = async () => {
     if (!selectedProblem || !user) return;
-    setRunning(true);
-    setResults([]);
+    setSubmitting(true);
+    setTestResults([]);
+    setActiveTab('results');
 
-    const testResults = await Promise.all(
+    const results = await Promise.all(
       selectedProblem.testCases.map(async tc => {
         const got = await runOnJudge0(code, tc.input);
         const gotTrimmed = got.trim();
@@ -96,11 +110,10 @@ export default function PracticePage() {
       })
     );
 
-    setResults(testResults);
-    const passedCount = testResults.filter(r => r.passed).length;
-    const verdict = passedCount === testResults.length ? 'accepted' : 'wrong_answer';
+    setTestResults(results);
+    const passedCount = results.filter(r => r.passed).length;
+    const verdict = passedCount === results.length ? 'accepted' : 'wrong_answer';
 
-    // Save submission
     await supabase.from('submissions').insert({
       user_id: user.id,
       problem_id: selectedProblem.id,
@@ -109,10 +122,9 @@ export default function PracticePage() {
       code,
       verdict,
       test_cases_passed: passedCount,
-      test_cases_total: testResults.length,
+      test_cases_total: results.length,
     });
 
-    // Update daily activity
     const today = new Date().toISOString().split('T')[0];
     await supabase.from('daily_activity').upsert({
       user_id: user.id,
@@ -123,11 +135,9 @@ export default function PracticePage() {
     if (verdict === 'accepted') {
       toast.success(`✅ All ${passedCount} test cases passed!`);
     } else {
-      toast.error(`${passedCount}/${testResults.length} test cases passed`);
+      toast.error(`${passedCount}/${results.length} test cases passed`);
     }
-
-    setRunning(false);
-    setActiveTab('results');
+    setSubmitting(false);
   };
 
   const handleAIFeedback = async () => {
@@ -135,35 +145,28 @@ export default function PracticePage() {
     setLoadingFeedback(true);
     setActiveTab('feedback');
     setAiFeedback('');
-
     try {
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/ai-feedback`, {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-feedback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          code,
-          language,
+          code, language,
           problemTitle: selectedProblem.title,
           problemDescription: selectedProblem.description,
-          testResults: results,
+          testResults,
         }),
       });
-
       if (!resp.ok) {
-        const err = await resp.json();
-        toast.error(err.error || 'AI feedback failed');
+        toast.error('AI feedback failed');
         setLoadingFeedback(false);
         return;
       }
-
       const reader = resp.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -183,7 +186,7 @@ export default function PracticePage() {
           } catch {}
         }
       }
-    } catch (e) {
+    } catch {
       toast.error('Failed to get AI feedback');
     }
     setLoadingFeedback(false);
@@ -195,8 +198,7 @@ export default function PracticePage() {
     setDryRunSteps([]);
     setActiveTab('dryrun');
     try {
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/dry-run-explain`, {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dry-run-explain`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -205,8 +207,7 @@ export default function PracticePage() {
         body: JSON.stringify({ code, language }),
       });
       if (!resp.ok) {
-        const err = await resp.json();
-        toast.error(err.error || 'Dry run failed');
+        toast.error('Dry run failed');
         setLoadingDryRun(false);
         return;
       }
@@ -218,41 +219,37 @@ export default function PracticePage() {
     setLoadingDryRun(false);
   };
 
+  const TAB_LABELS: Record<TabType, string> = {
+    output: '▶ Output',
+    results: `✓ Tests (${testResults.filter(r => r.passed).length}/${testResults.length})`,
+    feedback: '🤖 AI Feedback',
+    dryrun: '🔍 Dry Run',
+  };
+
   return (
     <div className="h-[calc(100vh-0px)] flex flex-col">
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border flex-shrink-0"
-        style={{ background: 'hsl(var(--card))' }}>
-        {/* Topic selector */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border flex-shrink-0 bg-card">
         <Select value={selectedTopicId} onValueChange={setSelectedTopicId}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {TOPICS.map(t => (
-              <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
-            ))}
+            {TOPICS.map(t => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}
           </SelectContent>
         </Select>
 
-        {/* Difficulty filter */}
         <div className="flex gap-1">
           {['all', 'easy', 'medium', 'hard'].map(d => (
             <button key={d} onClick={() => setDiffFilter(d)}
               className={`px-3 py-1.5 rounded-lg text-xs capitalize transition-all ${
-                diffFilter === d ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground bg-muted'
-              }`}
-              style={diffFilter === d ? { background: 'hsl(var(--primary))' } : {}}>
+                diffFilter === d ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground bg-muted'
+              }`}>
               {d}
             </button>
           ))}
         </div>
 
-        {/* Language selector */}
         <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
-          <SelectTrigger className="w-32 ml-auto">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-32 ml-auto"><SelectValue /></SelectTrigger>
           <SelectContent>
             {Object.entries(LANGUAGE_LABELS).map(([id, label]) => (
               <SelectItem key={id} value={id}>{label}</SelectItem>
@@ -262,9 +259,8 @@ export default function PracticePage() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Problem List */}
-        <div className="w-48 border-r border-border flex-shrink-0 overflow-y-auto"
-          style={{ background: 'hsl(var(--sidebar-background))' }}>
+        {/* Problem List Sidebar */}
+        <div className="w-48 border-r border-border flex-shrink-0 overflow-y-auto bg-sidebar">
           {filteredProblems.map(problem => (
             <button key={problem.id}
               onClick={() => setSelectedProblem(problem)}
@@ -282,12 +278,10 @@ export default function PracticePage() {
           ))}
         </div>
 
-        {/* Main Area */}
         {selectedProblem ? (
           <div className="flex flex-1 overflow-hidden">
             {/* Problem Description */}
-            <div className="w-80 border-r border-border overflow-y-auto flex-shrink-0 p-4 space-y-4"
-              style={{ background: 'hsl(var(--card))' }}>
+            <div className="w-72 border-r border-border overflow-y-auto flex-shrink-0 p-4 space-y-4 bg-card">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <h2 className="font-bold text-base">{selectedProblem.title}</h2>
@@ -325,8 +319,9 @@ export default function PracticePage() {
               </button>
             </div>
 
-            {/* Editor */}
+            {/* Editor + stdin + buttons (center) */}
             <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Monaco Editor */}
               <div className="flex-1 overflow-hidden">
                 <Editor
                   height="100%"
@@ -344,72 +339,138 @@ export default function PracticePage() {
                 />
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2 px-4 py-3 border-t border-border flex-shrink-0"
-                style={{ background: 'hsl(var(--card))' }}>
-                <Button onClick={handleSubmit} disabled={running}
-                  style={{ background: 'var(--gradient-cyan)', color: 'hsl(var(--primary-foreground))' }}>
-                  {running ? '⏳ Running...' : '▶ Submit'}
-                </Button>
-                <Button variant="outline" onClick={handleAIFeedback} disabled={loadingFeedback}>
-                  🤖 {loadingFeedback ? 'Analyzing...' : 'AI Feedback'}
-                </Button>
-                <Button variant="outline" onClick={handleDryRun} disabled={loadingDryRun}>
-                  🔍 {loadingDryRun ? 'Generating...' : 'Dry Run'}
-                </Button>
+              {/* Stdin input */}
+              <div className="border-t border-border bg-card p-3 flex-shrink-0">
+                <label className="text-xs text-muted-foreground mb-1 block">Standard Input (stdin)</label>
+                <Textarea
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  placeholder="Enter input here..."
+                  className="font-mono text-xs h-16 resize-none bg-muted border-border"
+                />
               </div>
 
-              {/* Results Panel */}
-              {(results.length > 0 || aiFeedback || dryRunSteps.length > 0 || loadingDryRun) && (
-                <div className="border-t border-border flex-shrink-0 max-h-[400px] overflow-hidden flex flex-col"
-                  style={{ background: 'hsl(var(--muted))' }}>
-                  <div className="flex gap-1 px-4 pt-3 flex-shrink-0">
-                    {(['results', 'feedback', 'dryrun'] as const).map(tab => (
-                      <button key={tab} onClick={() => setActiveTab(tab)}
-                        className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                          activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                        }`}>
-                        {tab === 'results' ? `Test Results (${results.filter(r => r.passed).length}/${results.length})`
-                          : tab === 'feedback' ? 'AI Feedback'
-                          : '🔍 Dry Run'}
-                      </button>
-                    ))}
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 px-4 py-3 border-t border-border flex-shrink-0 bg-card">
+                <Button onClick={handleRun} disabled={running} size="sm"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  {running ? '⏳ Running...' : '▶ Run Code'}
+                </Button>
+                <Button onClick={handleSubmit} disabled={submitting} size="sm"
+                  style={{ background: 'var(--gradient-cyan)', color: 'hsl(var(--primary-foreground))' }}>
+                  {submitting ? '⏳ Submitting...' : '✓ Submit'}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDryRun} disabled={loadingDryRun}>
+                  🔍 {loadingDryRun ? 'Generating...' : 'Dry Run'}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleAIFeedback} disabled={loadingFeedback}>
+                  🤖 {loadingFeedback ? 'Analyzing...' : 'AI Feedback'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Right Panel — Output / Test Results / AI Feedback / Dry Run */}
+            <div className="w-96 border-l border-border flex-shrink-0 flex flex-col overflow-hidden bg-card">
+              {/* Tabs */}
+              <div className="flex gap-1 px-3 pt-3 pb-2 border-b border-border flex-shrink-0 flex-wrap">
+                {(['output', 'results', 'feedback', 'dryrun'] as TabType[]).map(tab => (
+                  <button key={tab} onClick={() => setActiveTab(tab)}
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                      activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground bg-muted'
+                    }`}>
+                    {TAB_LABELS[tab]}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              <div className="flex-1 overflow-y-auto">
+                {/* Output tab */}
+                {activeTab === 'output' && (
+                  <div className="p-4">
+                    {output ? (
+                      <pre className="text-sm font-mono whitespace-pre-wrap text-foreground bg-muted rounded-lg p-3">{output}</pre>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Click "▶ Run Code" to execute your code with the stdin input.</p>
+                    )}
                   </div>
-                  <div className="flex-1 overflow-y-auto">
-                    {activeTab === 'results' && (
-                      <div className="p-4">
-                        {results.map((r, i) => (
-                          <div key={i} className={`flex items-start gap-3 p-2 rounded-lg mb-2 ${r.passed ? 'bg-dsa-green/10' : 'bg-destructive/10'}`}>
-                            <span className={r.passed ? 'verdict-accepted' : 'verdict-wrong'}>
-                              {r.passed ? '✓' : '✗'}
-                            </span>
-                            <div className="text-xs font-mono">
-                              <div>Expected: <span className="text-dsa-green">{r.expected}</span></div>
-                              {!r.passed && <div>Got: <span className="text-destructive">{r.got || 'No output'}</span></div>}
+                )}
+
+                {/* Test Results tab */}
+                {activeTab === 'results' && (
+                  <div className="p-4 space-y-3">
+                    {testResults.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Click "✓ Submit" to run your code against all test cases.</p>
+                    ) : (
+                      <>
+                        {/* Summary */}
+                        <div className={`p-3 rounded-lg text-sm font-semibold ${
+                          testResults.every(r => r.passed)
+                            ? 'bg-dsa-green/10 text-dsa-green'
+                            : 'bg-destructive/10 text-destructive'
+                        }`}>
+                          {testResults.every(r => r.passed)
+                            ? `✅ Accepted — All ${testResults.length} test cases passed!`
+                            : `❌ Wrong Answer — ${testResults.filter(r => r.passed).length}/${testResults.length} passed`}
+                        </div>
+
+                        {/* Individual test cases */}
+                        {testResults.map((r, i) => (
+                          <div key={i} className={`rounded-lg border p-3 space-y-2 ${
+                            r.passed ? 'border-dsa-green/30 bg-dsa-green/5' : 'border-destructive/30 bg-destructive/5'
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                                r.passed ? 'bg-dsa-green/20 text-dsa-green' : 'bg-destructive/20 text-destructive'
+                              }`}>
+                                {r.passed ? '✓ PASS' : '✗ FAIL'}
+                              </span>
+                              <span className="text-xs text-muted-foreground">Test Case {i + 1}</span>
+                            </div>
+                            <div className="text-xs font-mono space-y-1">
+                              <div><span className="text-muted-foreground">Input: </span><span className="text-foreground">{r.input}</span></div>
+                              <div><span className="text-muted-foreground">Expected: </span><span className="text-dsa-green">{r.expected}</span></div>
+                              {!r.passed && (
+                                <div><span className="text-muted-foreground">Got: </span><span className="text-destructive">{r.got || 'No output'}</span></div>
+                              )}
                             </div>
                           </div>
                         ))}
-                      </div>
-                    )}
-                    {activeTab === 'feedback' && (
-                      <div className="p-4 prose-dark text-sm leading-relaxed whitespace-pre-wrap">
-                        {loadingFeedback && !aiFeedback ? (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <span className="ai-pulse">●</span> Analyzing your code...
-                          </div>
-                        ) : aiFeedback}
-                      </div>
-                    )}
-                    {activeTab === 'dryrun' && (
-                      <DryRunPanel
-                        steps={dryRunSteps}
-                        isLoading={loadingDryRun}
-                        codeLines={code.split('\n')}
-                      />
+                      </>
                     )}
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* AI Feedback tab */}
+                {activeTab === 'feedback' && (
+                  <div className="p-4 prose-dark text-sm leading-relaxed whitespace-pre-wrap">
+                    {loadingFeedback && !aiFeedback ? (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span className="ai-pulse">●</span> Analyzing your code...
+                      </div>
+                    ) : aiFeedback ? (
+                      aiFeedback
+                    ) : (
+                      <p className="text-muted-foreground">Click "🤖 AI Feedback" to get analysis of your code.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Dry Run tab */}
+                {activeTab === 'dryrun' && (
+                  dryRunSteps.length > 0 || loadingDryRun ? (
+                    <DryRunPanel
+                      steps={dryRunSteps}
+                      isLoading={loadingDryRun}
+                      codeLines={code.split('\n')}
+                    />
+                  ) : (
+                    <div className="p-4">
+                      <p className="text-sm text-muted-foreground">Click "🔍 Dry Run" to see a step-by-step execution trace of your code.</p>
+                    </div>
+                  )
+                )}
+              </div>
             </div>
           </div>
         ) : (
