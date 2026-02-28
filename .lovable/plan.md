@@ -1,19 +1,40 @@
 
 
-# Add Dry Run Visualizer to Practice Page
+# Redesign Practice Page to Match Code Editor Layout
 
-## Changes
+## Problem
+The current Practice page has action buttons and results panel at the bottom of the editor, which gets hidden or cramped. It's missing a "Run Code" button (run with custom stdin). The layout doesn't match the Code Editor page's clean right-panel design.
 
-### 1. `src/pages/PracticePage.tsx`
-- Add dry run state (`dryRunSteps`, `loadingDryRun`) and a `handleDryRun` function (same logic as CodeEditorPage)
-- Add a "🔍 Dry Run" button next to the existing Submit and AI Feedback buttons
-- Add a `'dryrun'` option to the `activeTab` state so the results panel can show three tabs: Test Results | AI Feedback | Dry Run
-- Render `DryRunPanel` when the dry run tab is active, passing the steps and loading state
-- Import `DryRunPanel` and `DryRunStep` type
+## New Layout
 
-### 2. No new files or edge functions needed
-The existing `dry-run-explain` edge function already handles this. We just call it from PracticePage the same way CodeEditorPage does.
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│ [Topic ▼]  [All|Easy|Med|Hard]                        [Python 3 ▼] │
+├────┬──────────┬─────────────────────────┬───────────────────────────┤
+│    │          │  Monaco Editor          │  [Output|Results|Feedback|│
+│ P  │ Problem  │                         │   DryRun] tabs            │
+│ r  │ Desc     │                         │                           │
+│ o  │ +Examples│                         │  Tab content              │
+│ b  │ +Constr  │                         │                           │
+│ l  │          │─────────────────────────│                           │
+│ e  │          │ stdin (optional)        │                           │
+│ m  │          ├─────────────────────────│                           │
+│    │          │ [▶Run] [Submit] [DryRun]│                           │
+│ L  │          │        [AI Feedback]    │                           │
+│ i  │          │                         │                           │
+│ s  │          │                         │                           │
+│ t  │          │                         │                           │
+└────┴──────────┴─────────────────────────┴───────────────────────────┘
+```
 
-### Layout
-The dry run panel will appear in the existing bottom results panel area, selectable via a third tab. When active, it shows the full interactive visualizer with array animations, step-by-step controls, variable tracking, and line-by-line explanations — identical to the Code Editor page experience.
+## Changes to `src/pages/PracticePage.tsx`
+
+1. **Add "Run Code" feature**: New `handleRun` function that runs code with custom stdin input (same as CodeEditorPage), plus `input` and `output` state
+2. **Add stdin textarea** below the editor (same as Code Editor)
+3. **Move action buttons** to a bar below stdin: Run Code, Submit (test cases), Dry Run, AI Feedback
+4. **Replace bottom results panel with right-side panel** (w-96, border-l) matching Code Editor layout
+5. **Four tabs in right panel**: Output (from Run), Test Results (from Submit), AI Feedback, Dry Run
+6. **Test Results tab**: Show each test case with input, expected output, actual output, and pass/fail status with colored indicators
+
+No new files needed. Single file edit to `src/pages/PracticePage.tsx`.
 
