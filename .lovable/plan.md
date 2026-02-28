@@ -1,27 +1,24 @@
 
 
-# Fix Dry Run: Add Retry Logic and Improve Animation Reliability
+# Fix Dry Run Network Resilience
 
-## Root Cause
-The edge function `dry-run-explain` is deployed and working correctly (confirmed via direct test -- returns proper steps with arrayState, variables, etc.). The "Failed to connect AI service" error is caused by transient network failures in the preview environment (all requests, including auth refreshes, were failing simultaneously).
+## Problem
+All network requests in the preview are failing ("Failed to fetch") — this affects auth, Judge0, and dry-run equally. The backend function is deployed and healthy. The 3-retry with 1s fixed delay isn't enough for transient network issues.
 
 ## Changes
 
-### 1. `src/pages/CodeEditorPage.tsx` — Add retry logic to `handleDryRun`
-- Wrap the fetch call in a retry loop (up to 3 attempts with 1s delay between retries)
-- Show a more helpful error message distinguishing network errors from API errors
-- Add `input` to the dry run request body (currently missing, but the edge function accepts it)
+### 1. `src/pages/CodeEditorPage.tsx` — Improve retry with exponential backoff
+- Change retry delay from fixed 1000ms to exponential: `1000 * attempt` (1s, 2s, 3s)
+- Increase MAX_RETRIES from 3 to 4
+- Add `AbortController` with 30s timeout per attempt to prevent hanging requests
+- Improve error message to suggest refreshing the page
 
-### 2. `src/pages/PracticePage.tsx` — Same retry logic for `handleDryRun`
-- Add retry loop (3 attempts) matching CodeEditorPage
-- Include `input` in the request body
+### 2. `src/pages/PracticePage.tsx` — Same retry improvements
+- Match the same exponential backoff and timeout changes
 
-### 3. `src/components/DryRunPanel.tsx` — Add error state with retry button
-- Add an `error` prop (optional string) to DryRunPanel
-- When error is set and not loading, show an error state with a "Retry" button instead of the empty state
-- This gives users an in-panel way to retry without clicking the toolbar again
+### 3. `src/components/DryRunPanel.tsx` — Better error UX
+- Add a "Refresh Page" suggestion in the error state alongside the Retry button
+- Show a note that if all retries fail, refreshing the browser tab usually resolves it
 
-### 4. `src/components/AlgoArray.tsx` — Fix animation re-triggering
-- The `key={i}` on cells means animations only play on initial mount, not on step changes. Change the key to include a step identifier so cells re-mount when swapped/highlighted indices change, triggering the CSS animations each time
-- Accept a `stepIndex` prop and use `key={\`${stepIndex}-${i}\`}` on cells that have swap or highlight animations
+These are incremental improvements. The root cause is transient network instability in the preview environment — when connectivity returns, the feature works as designed with animations.
 
