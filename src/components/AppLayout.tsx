@@ -6,7 +6,7 @@ import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter,
   SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import {
   LayoutDashboard, BookOpen, Code2, FlaskConical, TrendingUp,
-  LogOut, ChevronRight, Flame, UserPlus, LogIn
+  LogOut, ChevronRight, Flame, UserPlus, LogIn, PanelLeftClose
 } from 'lucide-react';
 import AIChat from './AIChat';
 import AuthDialog from './AuthDialog';
@@ -23,7 +23,7 @@ const NAV_ITEMS = [
 
 function AppSidebarInner() {
   const { user, profile, signOut } = useAuth();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const location = useLocation();
 
@@ -36,10 +36,15 @@ function AppSidebarInner() {
             <img src={logoImg} alt="DSA Forge" className="w-full h-full object-cover" />
           </div>
           {!isCollapsed && (
-            <div>
-              <div className="font-bold text-sm gradient-text-brand">DSA Forge</div>
-              <div className="text-xs text-muted-foreground">Learn. Code. Master.</div>
-            </div>
+            <>
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-sm gradient-text-brand">DSA Forge</div>
+                <div className="text-xs text-muted-foreground">Learn. Code. Master.</div>
+              </div>
+              <button onClick={toggleSidebar} className="text-muted-foreground hover:text-foreground transition-colors">
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            </>
           )}
         </div>
       </SidebarHeader>
