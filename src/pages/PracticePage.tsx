@@ -201,9 +201,11 @@ export default function PracticePage() {
     setDryRunError('');
     setActiveTab('dryrun');
 
-    const MAX_RETRIES = 3;
+    const MAX_RETRIES = 4;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       try {
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dry-run-explain`, {
           method: 'POST',
@@ -212,6 +214,7 @@ export default function PracticePage() {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ code, language, input }),
+          signal: controller.signal,
         });
         if (!resp.ok) {
           toast.error('Dry run failed');
@@ -224,11 +227,13 @@ export default function PracticePage() {
         return;
       } catch {
         if (attempt < MAX_RETRIES) {
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 1000 * attempt));
         } else {
-          setDryRunError('Network error. Please check your connection and try again.');
+          setDryRunError('Network error. Try refreshing the page or check your connection.');
           toast.error('Failed to connect after multiple attempts');
         }
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
     setLoadingDryRun(false);

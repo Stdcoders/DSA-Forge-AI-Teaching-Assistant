@@ -117,15 +117,26 @@ function ErrorState({ error, onRetry }: { error: string; onRetry?: () => void })
       <div className="text-4xl">⚠️</div>
       <p className="font-semibold text-destructive text-sm">Connection Failed</p>
       <p className="text-xs text-muted-foreground leading-relaxed">{error}</p>
-      {onRetry && (
+      <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
+        If this keeps happening, try refreshing the page — it usually resolves connectivity issues.
+      </p>
+      <div className="flex gap-2 mt-2">
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={{ background: 'var(--gradient-cyan)', color: 'hsl(var(--primary-foreground))' }}
+          >
+            🔄 Retry
+          </button>
+        )}
         <button
-          onClick={onRetry}
-          className="mt-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-          style={{ background: 'var(--gradient-cyan)', color: 'hsl(var(--primary-foreground))' }}
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 rounded-lg text-sm font-semibold border border-border text-foreground/80 hover:bg-muted transition-all"
         >
-          🔄 Retry Dry Run
+          🔃 Refresh Page
         </button>
-      )}
+      </div>
     </div>
   );
 }
