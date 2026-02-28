@@ -1,24 +1,29 @@
 
 
-# Fix Dry Run Network Resilience
+# Make Dry Run Work Offline with Local Fallback
 
-## Problem
-All network requests in the preview are failing ("Failed to fetch") — this affects auth, Judge0, and dry-run equally. The backend function is deployed and healthy. The 3-retry with 1s fixed delay isn't enough for transient network issues.
+## Root Cause (confirmed)
+The backend function `dry-run-explain` returns 200 with correct data when called directly. **Every** request from the preview iframe is failing — auth refreshes, dry-run calls, everything. This is a transient preview environment networking issue that no amount of retry logic can fix.
 
-## Changes
+## Solution: Add a local fallback with sample dry-run traces
+When all network retries fail, instead of showing "Connection Failed", generate a local dry-run trace so users can always see the animation feature working.
 
-### 1. `src/pages/CodeEditorPage.tsx` — Improve retry with exponential backoff
-- Change retry delay from fixed 1000ms to exponential: `1000 * attempt` (1s, 2s, 3s)
-- Increase MAX_RETRIES from 3 to 4
-- Add `AbortController` with 30s timeout per attempt to prevent hanging requests
-- Improve error message to suggest refreshing the page
+### Changes
 
-### 2. `src/pages/PracticePage.tsx` — Same retry improvements
-- Match the same exponential backoff and timeout changes
+#### 1. `src/data/sampleDryRuns.ts` — New file with sample traces
+- Create pre-built dry-run step arrays for common algorithms (bubble sort, binary search)
+- Include full `arrayState` with highlights, swaps, sorted indices, and pointers
+- A function `generateLocalDryRun(code)` that pattern-matches the code to pick a relevant sample, or falls back to a generic trace
 
-### 3. `src/components/DryRunPanel.tsx` — Better error UX
-- Add a "Refresh Page" suggestion in the error state alongside the Retry button
-- Show a note that if all retries fail, refreshing the browser tab usually resolves it
+#### 2. `src/pages/CodeEditorPage.tsx` — Use fallback on network failure
+- After all retries fail, call `generateLocalDryRun(code)` instead of showing an error
+- Show a toast: "Using offline demo — connect to see your actual code traced"
+- Set the steps from the local fallback so animations play immediately
 
-These are incremental improvements. The root cause is transient network instability in the preview environment — when connectivity returns, the feature works as designed with animations.
+#### 3. `src/pages/PracticePage.tsx` — Same fallback
+- Match the same fallback behavior as CodeEditorPage
+
+#### 4. `src/components/DryRunPanel.tsx` — Add "offline demo" indicator
+- When steps come from local fallback, show a small banner: "Offline demo — results may not match your code"
+- Keep the Retry button so users can try the real service when network recovers
 
