@@ -392,7 +392,7 @@ export default function PracticePage() {
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className={`flex-1 ${activeTab === 'dryrun' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
             {activeTab === 'output' && (
               <div className="p-4">
                 {output ? (
