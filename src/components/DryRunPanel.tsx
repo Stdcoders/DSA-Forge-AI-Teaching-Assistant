@@ -15,6 +15,8 @@ interface DryRunPanelProps {
   steps: DryRunStep[];
   isLoading: boolean;
   codeLines: string[];
+  error?: string;
+  onRetry?: () => void;
 }
 
 const HIGHLIGHT_COLORS: Record<string, { border: string; bg: string; badge: string; label: string }> = {
@@ -108,8 +110,28 @@ function EmptyState() {
   );
 }
 
+// ─── Error state ─────────────────────────────────────────────────────────────
+function ErrorState({ error, onRetry }: { error: string; onRetry?: () => void }) {
+  return (
+    <div className="flex flex-col items-center text-center mt-6 px-3 animate-fade-in gap-3">
+      <div className="text-4xl">⚠️</div>
+      <p className="font-semibold text-destructive text-sm">Connection Failed</p>
+      <p className="text-xs text-muted-foreground leading-relaxed">{error}</p>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="mt-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+          style={{ background: 'var(--gradient-cyan)', color: 'hsl(var(--primary-foreground))' }}
+        >
+          🔄 Retry Dry Run
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Panel ───────────────────────────────────────────────────────────────
-export default function DryRunPanel({ steps, isLoading, codeLines }: DryRunPanelProps) {
+export default function DryRunPanel({ steps, isLoading, codeLines, error, onRetry }: DryRunPanelProps) {
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speedIdx, setSpeedIdx] = useState(1); // default 1×
@@ -149,6 +171,7 @@ export default function DryRunPanel({ steps, isLoading, codeLines }: DryRunPanel
   }, [current, totalSteps]);
 
   if (isLoading) return <LoadingSkeleton />;
+  if (error && !steps.length) return <ErrorState error={error} onRetry={onRetry} />;
   if (!steps.length) return <EmptyState />;
 
   const hl = HIGHLIGHT_COLORS[step?.highlight || 'normal'] || HIGHLIGHT_COLORS.normal;
@@ -172,6 +195,7 @@ export default function DryRunPanel({ steps, isLoading, codeLines }: DryRunPanel
             <AlgoArray
               arrayState={step.arrayState}
               prevArrayState={prevStep?.arrayState}
+              stepIndex={current}
             />
           </div>
         )}
