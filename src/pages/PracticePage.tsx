@@ -396,139 +396,145 @@ export default function PracticePage() {
         </ResizablePanel>
         <ResizableHandle withHandle />
 
-        {/* Center — Editor + stdin */}
-        <ResizablePanel defaultSize={48} minSize={30}>
-          <div className="h-full flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-hidden">
-              <Editor
-                height="100%"
-                language={language === 'cpp' ? 'cpp' : language}
-                value={code}
-                onChange={v => setCode(v || '')}
-                theme="vs-dark"
-                options={{
-                  fontSize: 14,
-                  fontFamily: 'JetBrains Mono, Fira Code, monospace',
-                  minimap: { enabled: false },
-                  scrollBeyondLastLine: false,
-                  padding: { top: 16 },
-                  automaticLayout: true,
-                }}
-              />
-            </div>
+        {/* Center — Editor + Output below */}
+        <ResizablePanel defaultSize={78} minSize={40}>
+          <ResizablePanelGroup direction="vertical">
+            {/* Top: Monaco Editor */}
+            <ResizablePanel defaultSize={55} minSize={25}>
+              <div className="h-full overflow-hidden">
+                <Editor
+                  height="100%"
+                  language={language === 'cpp' ? 'cpp' : language}
+                  value={code}
+                  onChange={v => setCode(v || '')}
+                  theme="vs-dark"
+                  options={{
+                    fontSize: 14,
+                    fontFamily: 'JetBrains Mono, Fira Code, monospace',
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    padding: { top: 16 },
+                    automaticLayout: true,
+                  }}
+                />
+              </div>
+            </ResizablePanel>
 
-            <div className="border-t border-border bg-card p-2 flex-shrink-0">
-              <label className="text-[10px] text-muted-foreground mb-1 block">Standard Input (stdin)</label>
-              <Textarea
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder="Enter input here..."
-                className="font-mono text-xs h-14 resize-none bg-muted border-border"
-              />
-            </div>
-          </div>
-        </ResizablePanel>
+            <ResizableHandle withHandle />
 
-        <ResizableHandle withHandle />
-
-        {/* Right Panel — Tabs */}
-        <ResizablePanel defaultSize={30} minSize={20}>
-          <div className="h-full flex flex-col overflow-hidden bg-card">
-            <div className="flex gap-1 px-3 pt-2 pb-2 border-b border-border flex-shrink-0 flex-wrap">
-              {(['output', 'results', 'feedback', 'dryrun'] as TabType[]).map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={`px-2 py-1 text-[11px] rounded transition-colors ${
-                    activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground bg-muted'
-                  }`}>
-                  {TAB_LABELS[tab]}
-                </button>
-              ))}
-            </div>
-
-            <div className={`flex-1 ${activeTab === 'dryrun' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-              {activeTab === 'output' && (
-                <div className="p-4">
-                  {output ? (
-                    <pre className="text-sm font-mono whitespace-pre-wrap text-foreground bg-muted rounded-lg p-3">{output}</pre>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Click "▶ Run Code" to execute your code with the stdin input.</p>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'results' && (
-                <div className="p-4 space-y-3">
-                  {testResults.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Click "✓ Submit" to run your code against all test cases.</p>
-                  ) : (
-                    <>
-                      <div className={`p-3 rounded-lg text-sm font-semibold ${
-                        testResults.every(r => r.passed)
-                          ? 'bg-dsa-green/10 text-dsa-green'
-                          : 'bg-destructive/10 text-destructive'
-                      }`}>
-                        {testResults.every(r => r.passed)
-                          ? `✅ Accepted — All ${testResults.length} test cases passed!`
-                          : `❌ Wrong Answer — ${testResults.filter(r => r.passed).length}/${testResults.length} passed`}
-                      </div>
-                      {testResults.map((r, i) => (
-                        <div key={i} className={`rounded-lg border p-3 space-y-2 ${
-                          r.passed ? 'border-dsa-green/30 bg-dsa-green/5' : 'border-destructive/30 bg-destructive/5'
-                        }`}>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                              r.passed ? 'bg-dsa-green/20 text-dsa-green' : 'bg-destructive/20 text-destructive'
-                            }`}>
-                              {r.passed ? '✓ PASS' : '✗ FAIL'}
-                            </span>
-                            <span className="text-xs text-muted-foreground">Test Case {i + 1}</span>
-                          </div>
-                          <div className="text-xs font-mono space-y-1">
-                            <div><span className="text-muted-foreground">Input: </span><span className="text-foreground">{r.input}</span></div>
-                            <div><span className="text-muted-foreground">Expected: </span><span className="text-dsa-green">{r.expected}</span></div>
-                            {!r.passed && (
-                              <div><span className="text-muted-foreground">Got: </span><span className="text-destructive">{r.got || 'No output'}</span></div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'feedback' && (
-                <div className="p-4 prose-dark text-sm leading-relaxed whitespace-pre-wrap">
-                  {loadingFeedback && !aiFeedback ? (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span className="ai-pulse">●</span> Analyzing your code...
-                    </div>
-                  ) : aiFeedback ? (
-                    aiFeedback
-                  ) : (
-                    <p className="text-muted-foreground">Click "🤖 AI Feedback" to get analysis of your code.</p>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'dryrun' && (
-                dryRunSteps.length > 0 || loadingDryRun || dryRunError ? (
-                  <DryRunPanel
-                    steps={dryRunSteps}
-                    isLoading={loadingDryRun}
-                    codeLines={code.split('\n')}
-                    error={dryRunError}
-                    onRetry={handleDryRun}
-                    isOfflineDemo={isOfflineDemo}
+            {/* Bottom: stdin + tabs */}
+            <ResizablePanel defaultSize={45} minSize={20}>
+              <div className="h-full flex flex-col overflow-hidden bg-card">
+                {/* stdin */}
+                <div className="border-b border-border p-2 flex-shrink-0">
+                  <label className="text-[10px] text-muted-foreground mb-1 block">Standard Input (stdin)</label>
+                  <Textarea
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    placeholder="Enter input here..."
+                    className="font-mono text-xs h-14 resize-none bg-muted border-border"
                   />
-                ) : (
-                  <div className="p-4">
-                    <p className="text-sm text-muted-foreground">Click "🔍 Dry Run" to see a step-by-step execution trace of your code.</p>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex gap-1 px-3 pt-2 pb-2 border-b border-border flex-shrink-0 flex-wrap">
+                  {(['output', 'results', 'feedback', 'dryrun'] as TabType[]).map(tab => (
+                    <button key={tab} onClick={() => setActiveTab(tab)}
+                      className={`px-2 py-1 text-[11px] rounded transition-colors ${
+                        activeTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground bg-muted'
+                      }`}>
+                      {TAB_LABELS[tab]}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab content */}
+                <div className={`flex-1 ${activeTab === 'dryrun' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                  {activeTab === 'output' && (
+                    <div className="p-4">
+                      {output ? (
+                        <pre className="text-sm font-mono whitespace-pre-wrap text-foreground bg-muted rounded-lg p-3">{output}</pre>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Click "▶ Run Code" to execute your code with the stdin input.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'results' && (
+                    <div className="p-4 space-y-3">
+                      {testResults.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Click "✓ Submit" to run your code against all test cases.</p>
+                      ) : (
+                        <>
+                          <div className={`p-3 rounded-lg text-sm font-semibold ${
+                            testResults.every(r => r.passed)
+                              ? 'bg-dsa-green/10 text-dsa-green'
+                              : 'bg-destructive/10 text-destructive'
+                          }`}>
+                            {testResults.every(r => r.passed)
+                              ? `✅ Accepted — All ${testResults.length} test cases passed!`
+                              : `❌ Wrong Answer — ${testResults.filter(r => r.passed).length}/${testResults.length} passed`}
+                          </div>
+                          {testResults.map((r, i) => (
+                            <div key={i} className={`rounded-lg border p-3 space-y-2 ${
+                              r.passed ? 'border-dsa-green/30 bg-dsa-green/5' : 'border-destructive/30 bg-destructive/5'
+                            }`}>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                                  r.passed ? 'bg-dsa-green/20 text-dsa-green' : 'bg-destructive/20 text-destructive'
+                                }`}>
+                                  {r.passed ? '✓ PASS' : '✗ FAIL'}
+                                </span>
+                                <span className="text-xs text-muted-foreground">Test Case {i + 1}</span>
+                              </div>
+                              <div className="text-xs font-mono space-y-1">
+                                <div><span className="text-muted-foreground">Input: </span><span className="text-foreground">{r.input}</span></div>
+                                <div><span className="text-muted-foreground">Expected: </span><span className="text-dsa-green">{r.expected}</span></div>
+                                {!r.passed && (
+                                  <div><span className="text-muted-foreground">Got: </span><span className="text-destructive">{r.got || 'No output'}</span></div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'feedback' && (
+                    <div className="p-4 prose-dark text-sm leading-relaxed whitespace-pre-wrap">
+                      {loadingFeedback && !aiFeedback ? (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span className="ai-pulse">●</span> Analyzing your code...
+                        </div>
+                      ) : aiFeedback ? (
+                        aiFeedback
+                      ) : (
+                        <p className="text-muted-foreground">Click "🤖 AI Feedback" to get analysis of your code.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'dryrun' && (
+                    dryRunSteps.length > 0 || loadingDryRun || dryRunError ? (
+                      <DryRunPanel
+                        steps={dryRunSteps}
+                        isLoading={loadingDryRun}
+                        codeLines={code.split('\n')}
+                        error={dryRunError}
+                        onRetry={handleDryRun}
+                        isOfflineDemo={isOfflineDemo}
+                      />
+                    ) : (
+                      <div className="p-4">
+                        <p className="text-sm text-muted-foreground">Click "🔍 Dry Run" to see a step-by-step execution trace of your code.</p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
