@@ -12,6 +12,7 @@ import TheoryLevelPage from "@/pages/TheoryLevelPage";
 import CodeEditorPage from "@/pages/CodeEditorPage";
 import PracticePage from "@/pages/PracticePage";
 import ProgressPage from "@/pages/ProgressPage";
+import SolutionPage from "@/pages/SolutionPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/editor" element={<CodeEditorPage />} />
               <Route path="/practice" element={<PracticePage />} />
               <Route path="/progress" element={<ProgressPage />} />
+              <Route path="/solution/:topicId/:problemId" element={<SolutionPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

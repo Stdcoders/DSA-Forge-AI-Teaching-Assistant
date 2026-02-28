@@ -389,6 +389,12 @@ export default function PracticePage() {
                         className="text-xs text-primary hover:underline">
                         ← View Theory
                       </button>
+                      {selectedProblem && (
+                        <button onClick={() => navigate(`/solution/${selectedTopicId}/${selectedProblem.id}`)}
+                          className="text-xs text-dsa-amber hover:underline flex items-center gap-1 mt-1">
+                          💡 Solution
+                        </button>
+                      )}
                     </div>
                   </ScrollArea>
                 )}
