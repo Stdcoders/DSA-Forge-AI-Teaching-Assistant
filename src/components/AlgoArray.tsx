@@ -14,6 +14,7 @@ export interface ArrayState {
 interface AlgoArrayProps {
   arrayState: ArrayState;
   prevArrayState?: ArrayState;
+  stepIndex?: number;
 }
 
 const POINTER_COLORS: Record<string, { text: string; dot: string }> = {
@@ -42,7 +43,7 @@ function buildPointerMap(pointers: Record<string, number>): Record<number, strin
 
 const MAX_CELLS = 14;
 
-export default function AlgoArray({ arrayState, prevArrayState }: AlgoArrayProps) {
+export default function AlgoArray({ arrayState, prevArrayState, stepIndex = 0 }: AlgoArrayProps) {
   const {
     name, values,
     highlightIndices = [],
@@ -106,14 +107,17 @@ export default function AlgoArray({ arrayState, prevArrayState }: AlgoArrayProps
       <div className="flex items-stretch gap-0">
         <span className="text-xs font-mono font-bold text-foreground/40 w-10 text-right mr-1 flex-shrink-0 self-center">=</span>
         <div className="flex border border-border/60 rounded-lg overflow-hidden">
-          {display.map((val, i) => (
-            <div
-              key={i}
-              className={`w-10 h-10 flex items-center justify-center text-sm font-mono font-bold border-r border-border/40 last:border-r-0 transition-all duration-300 ${getCellStyle(i)} ${getCellAnimation(i)}`}
-            >
-              {String(val)}
-            </div>
-          ))}
+          {display.map((val, i) => {
+            const needsAnimKey = swappedIndices.includes(i) || highlightIndices.includes(i);
+            return (
+              <div
+                key={needsAnimKey ? `${stepIndex}-${i}` : i}
+                className={`w-10 h-10 flex items-center justify-center text-sm font-mono font-bold border-r border-border/40 last:border-r-0 transition-all duration-300 ${getCellStyle(i)} ${getCellAnimation(i)}`}
+              >
+                {String(val)}
+              </div>
+            );
+          })}
           {truncated && (
             <div className="w-6 h-10 flex items-center justify-center text-xs text-muted-foreground bg-card border-r border-border/40">…</div>
           )}

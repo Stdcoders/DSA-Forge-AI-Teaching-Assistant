@@ -92,40 +92,54 @@ export default function CodeEditorPage() {
     setRunning(false);
   };
 
+  const [dryRunError, setDryRunError] = useState('');
+
   const handleDryRun = async () => {
     if (!code.trim()) return;
     setLoadingDryRun(true);
     setDryRunSteps([]);
+    setDryRunError('');
     setActivePanel('dryrun');
 
-    try {
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/dry-run-explain`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ code, language, input }),
-      });
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+    const MAX_RETRIES = 3;
 
-      if (!resp.ok) {
-        const err = await resp.json();
-        if (resp.status === 429) toast.error('Rate limit reached. Please wait a moment.');
-        else if (resp.status === 402) toast.error('AI credits exhausted. Please add credits.');
-        else toast.error(err.error || 'Dry run failed');
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/dry-run-explain`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ code, language, input }),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json();
+          if (resp.status === 429) toast.error('Rate limit reached. Please wait a moment.');
+          else if (resp.status === 402) toast.error('AI credits exhausted. Please add credits.');
+          else toast.error(err.error || 'Dry run failed');
+          setLoadingDryRun(false);
+          return;
+        }
+
+        const data = await resp.json();
+        if (data.steps && Array.isArray(data.steps)) {
+          setDryRunSteps(data.steps);
+        } else {
+          toast.error('Could not parse dry run steps');
+        }
         setLoadingDryRun(false);
         return;
+      } catch (e) {
+        if (attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, 1000));
+        } else {
+          setDryRunError('Network error. Please check your connection and try again.');
+          toast.error('Failed to connect after multiple attempts');
+        }
       }
-
-      const data = await resp.json();
-      if (data.steps && Array.isArray(data.steps)) {
-        setDryRunSteps(data.steps);
-      } else {
-        toast.error('Could not parse dry run steps');
-      }
-    } catch (e) {
-      toast.error('Failed to connect to AI service');
     }
     setLoadingDryRun(false);
   };
@@ -231,6 +245,8 @@ export default function CodeEditorPage() {
                 steps={dryRunSteps}
                 isLoading={loadingDryRun}
                 codeLines={codeLines}
+                error={dryRunError}
+                onRetry={handleDryRun}
               />
             </div>
           )}

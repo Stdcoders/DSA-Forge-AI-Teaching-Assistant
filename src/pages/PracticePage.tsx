@@ -192,29 +192,44 @@ export default function PracticePage() {
     setLoadingFeedback(false);
   };
 
+  const [dryRunError, setDryRunError] = useState('');
+
   const handleDryRun = async () => {
     if (!code.trim()) return;
     setLoadingDryRun(true);
     setDryRunSteps([]);
+    setDryRunError('');
     setActiveTab('dryrun');
-    try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dry-run-explain`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ code, language }),
-      });
-      if (!resp.ok) {
-        toast.error('Dry run failed');
+
+    const MAX_RETRIES = 3;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dry-run-explain`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ code, language, input }),
+        });
+        if (!resp.ok) {
+          toast.error('Dry run failed');
+          setLoadingDryRun(false);
+          return;
+        }
+        const data = await resp.json();
+        setDryRunSteps(data.steps || []);
         setLoadingDryRun(false);
         return;
+      } catch {
+        if (attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, 1000));
+        } else {
+          setDryRunError('Network error. Please check your connection and try again.');
+          toast.error('Failed to connect after multiple attempts');
+        }
       }
-      const data = await resp.json();
-      setDryRunSteps(data.steps || []);
-    } catch {
-      toast.error('Failed to generate dry run');
     }
     setLoadingDryRun(false);
   };
@@ -459,11 +474,13 @@ export default function PracticePage() {
             )}
 
             {activeTab === 'dryrun' && (
-              dryRunSteps.length > 0 || loadingDryRun ? (
+              dryRunSteps.length > 0 || loadingDryRun || dryRunError ? (
                 <DryRunPanel
                   steps={dryRunSteps}
                   isLoading={loadingDryRun}
                   codeLines={code.split('\n')}
+                  error={dryRunError}
+                  onRetry={handleDryRun}
                 />
               ) : (
                 <div className="p-4">
