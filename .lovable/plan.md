@@ -1,34 +1,40 @@
 
 
-## Plan: Move Output Tabs Below Editor (Replace Right Panel)
+## Plan: Add "Solution" Page for Practice Problems
 
-The user wants the Output/Tests/AI Feedback/Dry Run panel to be stacked below the code editor (where stdin currently is), instead of being a separate right column. This matches the Code Editor page layout.
+### Overview
+Create a new **Solution Page** (`/solution/:topicId/:problemId`) that provides AI-generated theory, animated step-by-step explanations, and multiple solution approaches for each problem.
 
-### Changes to `src/pages/PracticePage.tsx`:
+### Changes
 
-1. **Remove the third resizable panel** (right column with tabs) and its resize handle
-2. **Restructure the center panel** to have a vertical split:
-   - Top: Monaco Editor
-   - Bottom: Vertically stacked area with stdin input + Output/Tests/AI Feedback/Dry Run tabs (using a vertical `ResizablePanelGroup`)
-3. **Move stdin** to a collapsible section or small area within the bottom panel, alongside the tabs
-4. **Result**: Two-column layout (Problem List | Editor + Output below) instead of three columns
+#### 1. Create `src/pages/SolutionPage.tsx` (new file)
+- Accepts `topicId` and `problemId` from URL params
+- Looks up the problem from `curriculum.ts` data
+- Sections:
+  - **Problem Statement** — title, description, examples
+  - **Key Concepts** — relevant theory extracted from the topic's theory levels
+  - **Solution Approaches** — multiple approaches (brute force, optimized) with:
+    - Explanation text
+    - Step-by-step animated walkthrough (using CSS transitions to highlight each step)
+    - Code implementation in the user's preferred language
+    - Time/Space complexity analysis
+  - **AI Explanation** button — calls the existing `ai-chat` or `ai-feedback` edge function to generate a detailed explanation on demand
+- Back button to return to Practice page
 
-### Layout Structure:
-```text
-┌──────────────┬──────────────────────────────┐
-│ Problem List │  Monaco Editor               │
-│              │                              │
-│              ├──────────────────────────────┤
-│              │ stdin (small)                │
-│              ├──────────────────────────────┤
-│              │ [Output] [Tests] [AI] [Dry]  │
-│              │  Tab content area            │
-└──────────────┴──────────────────────────────┘
+#### 2. Update `src/App.tsx`
+- Add route: `<Route path="/solution/:topicId/:problemId" element={<SolutionPage />} />`
+
+#### 3. Update `src/pages/PracticePage.tsx` (line ~391)
+- Add a "Solution" button below "← View Theory":
+```tsx
+<button onClick={() => navigate(`/solution/${selectedTopicId}/${selectedProblem.id}`)}
+  className="text-xs text-primary hover:underline flex items-center gap-1">
+  💡 Solution
+</button>
 ```
 
-### File: `src/pages/PracticePage.tsx`
-- Remove the third `ResizablePanel` and its `ResizableHandle`
-- Convert center panel into a vertical `ResizablePanelGroup` with editor on top and output tabs on bottom
-- Keep stdin as a small fixed section between editor and tabs
-- Adjust default sizes (left: 22, center: 78)
+#### 4. AI Animation Component (within SolutionPage)
+- Step-by-step approach cards that auto-animate or can be manually stepped through
+- Each step highlights the relevant concept with a smooth transition
+- Uses existing edge function (`ai-feedback` or `dry-run-explain`) to generate explanations when the user clicks "AI Explain"
 
