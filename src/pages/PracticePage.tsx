@@ -312,7 +312,7 @@ export default function PracticePage() {
         </Select>
       </div>
 
-      <ResizablePanelGroup direction="horizontal" className="flex-1" autoSaveId="practice-horizontal-v2">
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* Left Panel — Problem List + Description */}
         <ResizablePanel
           defaultSize={22}
