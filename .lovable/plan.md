@@ -1,34 +1,35 @@
 
 
-# Fix Practice Page Layout — Editor Not Visible
+# Fix Dry Run Animation Issues
 
-## Root Cause
-The current layout has 4 horizontal panels with 864px of fixed-width columns (w-48 + w-72 + w-96), leaving nearly zero space for the Monaco editor (`flex-1`) on typical screens.
+## Problems Identified
 
-## Solution
-Restructure the Practice page to use a **2-column layout** like the Code Editor page (image-6 reference), with the problem list and description combined into a single left panel, and the editor + right results panel taking the remaining space.
+1. **Broken layout in PracticePage**: The DryRunPanel (which uses `h-full overflow-hidden` with a fixed bottom controls bar) is placed inside a `<div className="flex-1 overflow-y-auto">` container. This breaks the flex layout — the controls bar gets pushed off-screen and the panel can't size properly. In CodeEditorPage it correctly uses `<div className="flex-1 overflow-hidden">`.
 
-### New Layout
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ [Topic ▼]  [All|Easy|Med|Hard]   [▶ Run Code] [Submit] [DryRun]  [Lang ▼] │
-├─────────────────┬────────────────────────┬───────────────────────┤
-│ Problem List    │  Monaco Editor         │  Output / Tests /     │
-│ + Description   │                        │  AI Feedback / DryRun │
-│ (collapsible    │                        │                       │
-│  left panel)    │                        │                       │
-│                 │────────────────────────│                       │
-│                 │ stdin (optional)       │                       │
-└─────────────────┴────────────────────────┴───────────────────────┘
-```
+2. **No real cell animations in AlgoArray**: Cells only use `transition-all duration-400` for color changes. There's no visual feedback for swaps (cells briefly scaling/bouncing), no pulse on highlighted cells, and no smooth pointer movement between steps.
 
-### Changes to `src/pages/PracticePage.tsx`
+3. **`duration-400` is invalid Tailwind**: Tailwind doesn't have `duration-400` by default. This means transitions may not be applying at all. Should use `duration-300` or `duration-500`.
 
-1. **Merge problem list + description into a single left sidebar** (w-80, scrollable) with problem list at top and selected problem details below
-2. **Move action buttons (Run Code, Submit, Dry Run, AI Feedback) to the top bar** next to the language selector, matching Code Editor's top toolbar style
-3. **Remove the separate action buttons bar** below stdin to free vertical space
-4. **Keep right panel (w-96)** with Output/Tests/AI Feedback/DryRun tabs — unchanged
-5. **Editor takes flex-1** in the center with stdin below it — now has plenty of room since only 2 fixed-width panels exist (w-80 + w-96 = 576px vs previous 864px)
+## Changes
 
-This matches the Code Editor page layout from image-6: top toolbar with buttons, left editor area with stdin, right panel with tabs.
+### 1. `src/pages/PracticePage.tsx`
+- Fix the dryrun tab container: when `activeTab === 'dryrun'`, render DryRunPanel inside a `flex-1 overflow-hidden` div (matching CodeEditorPage) instead of the shared `overflow-y-auto` wrapper
+- Restructure the right panel so the tab content area uses conditional flex layout
+
+### 2. `src/components/AlgoArray.tsx`
+- Fix `duration-400` → `duration-300` on cells
+- Add swap animation: when `swappedIndices` contains an index, apply a brief scale bounce keyframe (`animate-bounce-cell`)
+- Add highlight pulse: when `highlightIndices` contains an index, apply a subtle pulse glow
+- Add smooth pointer transition using `transition-all duration-500` on the key bubble position
+- Use a `key` prop based on step to force re-mount animations on swap steps
+
+### 3. `src/components/DryRunPanel.tsx`
+- Fix `duration-400` → `duration-300` on the progress bar
+- Add `key={current}` on the explanation card to trigger fade-in animation per step change
+- Auto-scroll the array section into view when step changes
+
+### 4. `src/index.css`
+- Add `@keyframes cell-swap` (brief scale up/down bounce)
+- Add `@keyframes cell-highlight-pulse` (subtle glow pulse)
+- Add corresponding `.animate-cell-swap` and `.animate-cell-pulse` classes
 
