@@ -66,7 +66,8 @@ export default function CurriculumPage() {
 
           return (
             <div key={topic.id}
-              className="rounded-xl border p-5 flex flex-col gap-4 transition-all duration-200 card-hover"
+              onClick={() => navigate(`/curriculum/${topic.id}`)}
+              className="rounded-xl border p-5 flex flex-col gap-4 transition-all duration-200 card-hover cursor-pointer"
               style={{
                 background: 'var(--gradient-card)',
                 borderColor: color + '40',
@@ -116,7 +117,7 @@ export default function CurriculumPage() {
                 </div>
               )}
 
-              <div className="flex gap-2 mt-auto">
+              <div className="flex gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
                 <Button size="sm" className="flex-1"
                   onClick={() => navigate(`/curriculum/${topic.id}`)}
                   style={{ background: color + 'dd', color: '#0a0f1e' }}>
