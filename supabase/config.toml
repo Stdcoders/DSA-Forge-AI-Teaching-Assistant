@@ -1,4 +1,13 @@
-project_id = "apbbjlwhhisxqqfhdtuf"
+project_id = "dczwucytzjelhninykzq"
 
 [functions.generate-quiz]
+verify_jwt = false
+
+[functions.generate-assessment-question]
+verify_jwt = false
+
+[functions.evaluate-assessment]
+verify_jwt = false
+
+[functions.assessment-hint]
 verify_jwt = false

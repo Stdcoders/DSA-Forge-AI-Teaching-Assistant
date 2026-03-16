@@ -9,11 +9,17 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { code, language, input } = await req.json();
+    const { code, language, input, problemTitle, problemDescription } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const systemPrompt = `You are an expert CS visualization instructor. When given code, produce a rich structured dry-run trace as a JSON array of steps for a visual algorithm player.
+    const systemPrompt = `You are an expert CS visualization instructor. When given code and a conceptual problem description, your goal is to produce a rich structured dry-run trace as a JSON array of steps for a visual algorithm player.
+
+CRITICAL INSTRUCTION FOR CRASHING/BUGGY CODE (e.g. C/C++ Segfaults):
+- Users will often submit buggy C/C++ code (e.g., completely uninitialized variables like \`int arr[n]\` where \`n\` isn't read correctly, missing bounds checks, missing \`stdin\` resulting in junk reads, etc.)
+- You MUST analyze the code to detect these fatal runtime errors!
+- Simulate the valid portion of the code conceptually matching the algorithm intent up to the failure point.
+- AT THE MOMENT OF FAILURE: Generate a step with \`highlight: "error"\`, insert a descriptive \`error\` string (e.g., "Segmentation fault: 'n' was uninitialized when allocating arr[n]"), and stop visualizing further steps.
 
 Each step must have ALL of these fields:
 - "line": line number (1-indexed integer)
@@ -22,7 +28,8 @@ Each step must have ALL of these fields:
 - "conceptNote": a very short note about the algorithm concept happening (e.g. "Binary Elimination", "Swap", "Pivot Selection", "Base Case"). Max 30 chars.
 - "variables": object of ALL current variable name→value pairs after this step
 - "highlight": "normal" | "branch" | "loop" | "return" | "error"
-- "arrayState": (REQUIRED whenever code works with an array/list — include in EVERY step once the array exists, updating it each step):
+- "error": (OPTIONAL) short string explaining a logical or runtime error occurring at this step.
+- "arrayState": (OPTIONAL if code works with arrays/lists — include in EVERY step once it exists):
   {
     "name": "arr",
     "values": [...],          // full array as primitive values
@@ -37,6 +44,18 @@ Each step must have ALL of these fields:
     "keyValue": 23,           // search target or pivot value if applicable
     "keyPointer": 5           // index where the key currently matches or null
   }
+- "stackState": (OPTIONAL if code works with stacks):
+  {
+    "name": "stack",
+    "values": [...],
+    "pointers": { "top": 2 },
+    "highlightIndices": []
+  }
+- "treeState": (OPTIONAL if code works with trees):
+  {
+    "name": "tree",
+    "nodes": [ { "id": "A", "value": 10, "left": "B", "right": "C", "highlight": true } ]
+  }
 
 IMPORTANT RULES:
 - Return ONLY a valid JSON array. No markdown, no code fences, no extra text.
@@ -48,16 +67,25 @@ IMPORTANT RULES:
 - Keep explanations conceptual and educational — explain WHY, not just what
 - Max 35 steps total`;
 
-    const userPrompt = `Dry-run this ${language} code${input ? ` with stdin: ${input}` : ""} and return the visual JSON step array:\n\n${code}`;
+    let userPromptContext = `Dry-run this ${language} code`;
+    if (problemTitle) userPromptContext += ` for the problem "${problemTitle}"`;
+    if (input) userPromptContext += ` with stdin: ${input}`;
+    
+    // Provide problem description if it's available and not a generic string to help ground the conceptual algorithm even if code is buggy.
+    const hasRealDescription = problemDescription && problemDescription.length > 50;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const userPrompt = `${userPromptContext}. 
+${hasRealDescription ? `\n\nProblem Description context:\n${problemDescription}\n\n` : "\n\n"}
+Return the visual JSON step array handling runtime errors properly if the code would crash:\n\n${code}`;
+
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

@@ -87,7 +87,13 @@ export default function CodeEditorPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ code, language, input }),
+          body: JSON.stringify({ 
+            code, 
+            language, 
+            input,
+            problemTitle: "User Code Execution", 
+            problemDescription: "General code execution trace. User might be writing custom unsaved logic." 
+          }),
           signal: controller.signal,
         });
         if (!resp.ok) {

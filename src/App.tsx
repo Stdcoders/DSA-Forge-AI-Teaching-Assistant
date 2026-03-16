@@ -12,6 +12,8 @@ import TheoryLevelPage from "@/pages/TheoryLevelPage";
 import CodeEditorPage from "@/pages/CodeEditorPage";
 import PracticePage from "@/pages/PracticePage";
 import ProgressPage from "@/pages/ProgressPage";
+import AssessmentPage from "@/pages/AssessmentPage";
+import AssessmentSessionPage from "@/pages/AssessmentSessionPage";
 import SolutionPage from "@/pages/SolutionPage";
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +35,8 @@ const App = () => (
               <Route path="/editor" element={<CodeEditorPage />} />
               <Route path="/practice" element={<PracticePage />} />
               <Route path="/progress" element={<ProgressPage />} />
+              <Route path="/assessment" element={<AssessmentPage />} />
+              <Route path="/assessment/:topicId" element={<AssessmentSessionPage />} />
               <Route path="/solution/:topicId/:problemId" element={<SolutionPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

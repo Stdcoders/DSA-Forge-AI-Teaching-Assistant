@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter,
   SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import {
-  LayoutDashboard, BookOpen, Code2, FlaskConical, TrendingUp,
+  LayoutDashboard, BookOpen, Code2, FlaskConical, TrendingUp, ClipboardCheck,
   LogOut, ChevronRight, Flame, UserPlus, LogIn, PanelLeftClose
 } from 'lucide-react';
 import AIChat from './AIChat';
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { icon: Code2, label: 'Code Editor', path: '/editor' },
   { icon: FlaskConical, label: 'Practice', path: '/practice' },
   { icon: TrendingUp, label: 'Progress', path: '/progress' },
+  { icon: ClipboardCheck, label: 'Assessment', path: '/assessment' },
 ];
 
 function AppSidebarInner() {

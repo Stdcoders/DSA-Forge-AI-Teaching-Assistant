@@ -128,6 +128,168 @@ export type Database = {
         }
         Relationships: []
       }
+      assessment_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          topic_id: string
+          current_level: string
+          status: string
+          easy_solved: number | null
+          easy_attempted: number | null
+          medium_solved: number | null
+          medium_attempted: number | null
+          hard_solved: number | null
+          hard_attempted: number | null
+          started_at: string | null
+          completed_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          topic_id: string
+          current_level: string
+          status?: string
+          easy_solved?: number | null
+          easy_attempted?: number | null
+          medium_solved?: number | null
+          medium_attempted?: number | null
+          hard_solved?: number | null
+          hard_attempted?: number | null
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          topic_id?: string
+          current_level?: string
+          status?: string
+          easy_solved?: number | null
+          easy_attempted?: number | null
+          medium_solved?: number | null
+          medium_attempted?: number | null
+          hard_solved?: number | null
+          hard_attempted?: number | null
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      assessment_questions: {
+        Row: {
+          id: string
+          session_id: string
+          user_id: string
+          topic_id: string
+          difficulty: string
+          title: string
+          description: string
+          examples: unknown
+          constraints: unknown
+          starter_code: unknown
+          test_cases: unknown
+          user_code: string | null
+          ai_score: number | null
+          ai_feedback: string | null
+          passed: boolean | null
+          skipped: boolean | null
+          hints_used: number | null
+          submitted_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          user_id: string
+          topic_id: string
+          difficulty: string
+          title: string
+          description: string
+          examples?: unknown
+          constraints?: unknown
+          starter_code?: unknown
+          test_cases?: unknown
+          user_code?: string | null
+          ai_score?: number | null
+          ai_feedback?: string | null
+          passed?: boolean | null
+          skipped?: boolean | null
+          hints_used?: number | null
+          submitted_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          user_id?: string
+          topic_id?: string
+          difficulty?: string
+          title?: string
+          description?: string
+          examples?: unknown
+          constraints?: unknown
+          starter_code?: unknown
+          test_cases?: unknown
+          user_code?: string | null
+          ai_score?: number | null
+          ai_feedback?: string | null
+          passed?: boolean | null
+          skipped?: boolean | null
+          hints_used?: number | null
+          submitted_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      assessment_topic_levels: {
+        Row: {
+          id: string
+          user_id: string
+          topic_id: string
+          determined_level: string
+          easy_pass_rate: number | null
+          medium_pass_rate: number | null
+          hard_pass_rate: number | null
+          total_questions_attempted: number | null
+          total_questions_passed: number | null
+          average_score: number | null
+          last_assessed_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          topic_id: string
+          determined_level: string
+          easy_pass_rate?: number | null
+          medium_pass_rate?: number | null
+          hard_pass_rate?: number | null
+          total_questions_attempted?: number | null
+          total_questions_passed?: number | null
+          average_score?: number | null
+          last_assessed_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          topic_id?: string
+          determined_level?: string
+          easy_pass_rate?: number | null
+          medium_pass_rate?: number | null
+          hard_pass_rate?: number | null
+          total_questions_attempted?: number | null
+          total_questions_passed?: number | null
+          average_score?: number | null
+          last_assessed_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_topic_progress: {
         Row: {
           attempts: number | null

@@ -312,3 +312,56 @@
 .animate-cell-pulse {
   animation: cell-pulse 0.8s ease-in-out;
 }
+
+/* ─── Linked List Animations ─── */
+@keyframes node-insert {
+  0%   { opacity: 0; transform: scale(0.5) translateY(-8px); }
+  50%  { opacity: 0.8; transform: scale(1.1) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes node-remove {
+  0%   { opacity: 1; transform: scale(1); }
+  50%  { opacity: 0.4; transform: scale(0.9); }
+  100% { opacity: 0.15; transform: scale(0.7); }
+}
+.animate-node-insert {
+  animation: node-insert 0.5s ease-out;
+}
+.animate-node-remove {
+  animation: node-remove 0.5s ease-out forwards;
+}
+
+/* ─── Stack Animations ─── */
+@keyframes stack-push {
+  0%   { opacity: 0; transform: translateY(-16px) scale(0.8); }
+  60%  { opacity: 1; transform: translateY(2px) scale(1.05); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes stack-pop {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-16px) scale(0.7); }
+}
+.animate-stack-push {
+  animation: stack-push 0.4s ease-out;
+}
+.animate-stack-pop {
+  animation: stack-pop 0.4s ease-out;
+}
+
+/* ─── Tree Animations ─── */
+@keyframes tree-visit {
+  0%, 100% { opacity: 0.3; r: 26; }
+  50%      { opacity: 0.6; r: 30; }
+}
+.animate-tree-visit {
+  animation: tree-visit 1s ease-in-out infinite;
+}
+
+/* ─── Swap Arrow ─── */
+@keyframes swap-arrow-in {
+  0%   { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-swap-arrow {
+  animation: swap-arrow-in 0.35s ease-out;
+}

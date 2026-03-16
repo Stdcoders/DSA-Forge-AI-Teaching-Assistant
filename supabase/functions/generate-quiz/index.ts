@@ -24,14 +24,14 @@ serve(async (req) => {
 
     const systemPrompt = `You are a quiz generator for a DSA learning platform. Generate exactly ${count} multiple-choice questions based on the provided theory content. Each question should test ${difficultyGuide}, not just memorization. Each question must have exactly 4 options with one correct answer.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Topic: ${topicTitle}\nLevel: ${level}\n\nTheory Content:\n${theoryContent}` },

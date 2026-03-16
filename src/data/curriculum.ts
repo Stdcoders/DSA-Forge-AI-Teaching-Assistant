@@ -1,3 +1,5 @@
+import { SHEET_PROBLEMS } from './sheetProblems';
+
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type Language = 'python' | 'java' | 'cpp';
 
@@ -4858,6 +4860,20 @@ def serialize(root):
   } as TopicContent)),
 ];
 
+// Merge sheet problems (from DSA Excel) into each topic
+TOPICS.forEach(topic => {
+  const sheetProbs = SHEET_PROBLEMS[topic.id];
+  if (sheetProbs && sheetProbs.length > 0) {
+    // Collect existing problem IDs to avoid duplicates
+    const existingIds = new Set(topic.problems.map(p => p.id));
+    const newProbs = sheetProbs.filter(p => !existingIds.has(p.id));
+    // Merge: existing problems first, then new ones sorted by difficulty
+    const diffOrder: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
+    newProbs.sort((a, b) => diffOrder[a.difficulty] - diffOrder[b.difficulty]);
+    topic.problems = [...topic.problems, ...newProbs];
+  }
+});
+
 export const TOPIC_MAP: Record<string, TopicContent> = {};
 TOPICS.forEach(t => { TOPIC_MAP[t.id] = t; });
 
@@ -4884,3 +4900,12 @@ export const LANGUAGE_LABELS: Record<Language, string> = {
   java: 'Java',
   cpp: 'C++ 17',
 };
+
+// 15 DSA topics suitable for coding assessments (excludes pure theory topics like variables, operators, etc.)
+export const ASSESSMENT_TOPIC_IDS = [
+  'arrays', 'sorting', 'strings', 'linked-lists', 'stacks', 'queues',
+  'binary-trees', 'bst', 'recursion', 'dp', 'graphs', 'greedy',
+  'backtracking', 'hashing', 'heaps',
+] as const;
+
+export const ASSESSMENT_TOPICS = TOPICS.filter(t => (ASSESSMENT_TOPIC_IDS as readonly string[]).includes(t.id));

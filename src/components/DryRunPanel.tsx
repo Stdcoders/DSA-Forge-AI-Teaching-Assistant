@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AlgoArray, { type ArrayState } from './AlgoArray';
+import StackVisualizer, { type StackState } from './StackVisualizer';
+import TreeVisualizer, { type TreeState } from './TreeVisualizer';
+import LinkedListVisualizer, { type LinkedListState } from './LinkedListVisualizer';
 
 export interface DryRunStep {
   line: number;
@@ -9,6 +12,10 @@ export interface DryRunStep {
   variables: Record<string, string | number | boolean>;
   highlight: 'normal' | 'branch' | 'loop' | 'return' | 'error';
   arrayState?: ArrayState;
+  stackState?: StackState;
+  treeState?: TreeState;
+  linkedListState?: LinkedListState;
+  error?: string;
 }
 
 interface DryRunPanelProps {
@@ -224,7 +231,40 @@ export default function DryRunPanel({ steps, isLoading, codeLines, error, onRetr
             />
           </div>
         )}
+        {/* ── Linked List Visualization ── */}
+        {step?.linkedListState && (
+          <div className="rounded-xl border border-border p-4 flex-shrink-0 overflow-x-auto animate-fade-in"
+            style={{ background: 'hsl(222 50% 4% / 0.6)' }}>
+            <LinkedListVisualizer state={step.linkedListState} />
+          </div>
+        )}
 
+        {/* ── Stack Visualization ── */}
+        {step?.stackState && (
+          <div className="rounded-xl border border-border p-4 flex-shrink-0 overflow-x-auto animate-fade-in"
+            style={{ background: 'hsl(222 50% 4% / 0.6)' }}>
+            <StackVisualizer state={step.stackState} />
+          </div>
+        )}
+
+        {/* ── Tree Visualization ── */}
+        {step?.treeState && (
+          <div className="rounded-xl border border-border p-4 flex-shrink-0 overflow-x-auto animate-fade-in"
+            style={{ background: 'hsl(222 50% 4% / 0.6)' }}>
+            <TreeVisualizer state={step.treeState} />
+          </div>
+        )}
+
+        {/* ── Error Notification ── */}
+        {step?.error && (
+          <div className="rounded-xl border border-destructive bg-destructive/10 p-3 animate-fade-in flex items-start gap-3">
+            <span className="text-xl">🛑</span>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-destructive">Error / Mistake</span>
+              <span className="text-xs text-destructive/90">{step.error}</span>
+            </div>
+          </div>
+        )}
         {/* ── Concept badge + explanation ── */}
         <div key={current} className={`rounded-xl border p-3 flex flex-col gap-2 flex-shrink-0 animate-fade-in transition-all duration-300 ${hl.border} ${hl.bg}`}>
           <div className="flex items-center gap-2 flex-wrap">

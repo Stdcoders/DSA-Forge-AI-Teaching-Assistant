@@ -23,7 +23,7 @@ export default function PracticePage() {
   const topicId = searchParams.get('topic') || TOPICS[0].id;
   const problemIdParam = searchParams.get('problem');
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const preferredLang = (profile?.preferred_language as Language) || 'python';
 
   const [selectedTopicId, setSelectedTopicId] = useState(topicId);
@@ -99,20 +99,26 @@ export default function PracticePage() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedProblem || !user) return;
+    if (!selectedProblem) return;
+    if (!user) {
+      toast.error('Sign in to submit your solution');
+      return;
+    }
     setSubmitting(true);
     setTestResults([]);
     setActiveTab('results');
 
-    const results = await Promise.all(
-      selectedProblem.testCases.map(async tc => {
-        const got = await runOnJudge0(code, tc.input);
-        const gotTrimmed = got.trim();
-        const expectedTrimmed = tc.expectedOutput.trim();
-        const passed = gotTrimmed === expectedTrimmed || gotTrimmed.includes(expectedTrimmed);
-        return { input: tc.input, expected: tc.expectedOutput, got: gotTrimmed, passed };
-      })
-    );
+    // Run test cases sequentially to avoid hitting Judge0 rate limits
+    const results: { input: string; expected: string; got: string; passed: boolean }[] = [];
+    for (let i = 0; i < selectedProblem.testCases.length; i++) {
+      if (i > 0) await new Promise(r => setTimeout(r, 600));
+      const tc = selectedProblem.testCases[i];
+      const got = await runOnJudge0(code, tc.input);
+      const gotTrimmed = got.trim();
+      const expectedTrimmed = tc.expectedOutput.trim();
+      const passed = gotTrimmed === expectedTrimmed;
+      results.push({ input: tc.input, expected: tc.expectedOutput, got: gotTrimmed, passed });
+    }
 
     setTestResults(results);
     const passedCount = results.filter(r => r.passed).length;
@@ -129,12 +135,37 @@ export default function PracticePage() {
       test_cases_total: results.length,
     });
 
+    // Fetch existing activity to properly increment (not overwrite)
     const today = new Date().toISOString().split('T')[0];
+    const { data: existingActivity } = await supabase
+      .from('daily_activity')
+      .select('problems_solved, topics_studied')
+      .eq('user_id', user.id)
+      .eq('activity_date', today)
+      .single();
+
     await supabase.from('daily_activity').upsert({
       user_id: user.id,
       activity_date: today,
-      problems_solved: passedCount > 0 ? 1 : 0,
+      problems_solved: (existingActivity?.problems_solved || 0) + (passedCount > 0 ? 1 : 0),
+      topics_studied: existingActivity?.topics_studied || 0,
     }, { onConflict: 'user_id,activity_date' });
+
+    // Update streak when a problem is solved
+    if (passedCount > 0 && profile) {
+      const lastActivity = profile.last_activity_date;
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      if (lastActivity !== today) {
+        const newStreak = lastActivity === yesterdayStr ? profile.streak_count + 1 : 1;
+        await supabase.from('profiles').update({
+          streak_count: newStreak,
+          last_activity_date: today,
+        }).eq('id', user.id);
+        await refreshProfile();
+      }
+    }
 
     if (verdict === 'accepted') {
       toast.success(`✅ All ${passedCount} test cases passed!`);
@@ -218,7 +249,13 @@ export default function PracticePage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ code, language, input }),
+          body: JSON.stringify({ 
+            code, 
+            language, 
+            input,
+            problemTitle: selectedProblem?.title,
+            problemDescription: selectedProblem?.description
+          }),
           signal: controller.signal,
         });
         if (!resp.ok) {

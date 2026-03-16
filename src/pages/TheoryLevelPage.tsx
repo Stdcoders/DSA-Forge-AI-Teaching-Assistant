@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getTopicById, type Language } from '@/data/curriculum';
 import { useTopicProgress } from '@/hooks/useTopicProgress';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import LevelQuiz from '@/components/LevelQuiz';
 import { toast } from 'sonner';
@@ -66,6 +67,22 @@ export default function TheoryLevelPage() {
     if (!user) { toast.error('Sign in to save progress'); return; }
     setMarkingComplete(true);
     await updateProgress(topic.id, { completed: true, mastery_score: 100, unlocked: true });
+
+    // Track topics_studied in daily activity
+    const today = new Date().toISOString().split('T')[0];
+    const { data: existingActivity } = await supabase
+      .from('daily_activity')
+      .select('problems_solved, topics_studied')
+      .eq('user_id', user.id)
+      .eq('activity_date', today)
+      .single();
+    await supabase.from('daily_activity').upsert({
+      user_id: user.id,
+      activity_date: today,
+      problems_solved: existingActivity?.problems_solved || 0,
+      topics_studied: (existingActivity?.topics_studied || 0) + 1,
+    }, { onConflict: 'user_id,activity_date' });
+
     toast.success(`🎉 ${topic.title} completed!`);
     setMarkingComplete(false);
     navigate(`/curriculum/${topicId}`);
