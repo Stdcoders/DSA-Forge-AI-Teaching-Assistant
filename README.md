@@ -383,8 +383,3 @@ Each topic includes:
 | Edge functions failing | Check Supabase Edge Function logs for errors |
 | Quiz not generating | The `generate-quiz` function has `verify_jwt = false` — ensure the function is deployed |
 
----
-
-## 📄 License
-
-This project is private and built with [Lovable](https://lovable.dev).
